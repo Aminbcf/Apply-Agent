@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -21,7 +22,7 @@ def main() -> int:
 
     print("Starting FastAPI backend on http://localhost:8000 ...")
     backend = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+        [sys.executable, "-m", "uvicorn", "main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
         cwd=BACKEND_DIR,
     )
     processes.append(backend)
@@ -35,9 +36,14 @@ def main() -> int:
         print("No src/front/package.json found, backend started only.")
 
     try:
-        return processes[0].wait()
+        while True:
+            for proc in processes:
+                code = proc.poll()
+                if code is not None:
+                    return code
+            time.sleep(0.2)
     except KeyboardInterrupt:
-        print("\\nStopping services...")
+        print("\nStopping services...")
         return 0
     finally:
         for proc in processes:

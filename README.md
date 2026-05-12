@@ -1,6 +1,7 @@
 # Apply-Agent
 
 A standard **React + FastAPI (Python)** project layout.
+This project is a local agent for CV, cover letter, and job compatibility workflows.
 
 ## Structure
 
