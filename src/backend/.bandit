@@ -1,6 +1,3 @@
-exclude_dirs:
-  - 'tests'
-  - '.venv'
-  - '__pycache__'
-skips:
-  - 'B101'
+[bandit]
+exclude_dirs = .venv,tests,__pycache__
+skips = B101
