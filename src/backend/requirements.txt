@@ -1,2 +1,9 @@
 fastapi
 uvicorn[standard]
+sentence-transformers
+numpy
+pandas
+torch
+sqlalchemy
+aiosqlite
+pydantic-settings

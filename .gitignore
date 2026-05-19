@@ -1,0 +1,10 @@
+.env
+Workflow.md
+docs/*
+node_modules/
+dist/
+target/
+data/*.db
+*.pyc
+__pycache__/
+.venv/

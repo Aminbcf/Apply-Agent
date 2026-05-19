@@ -1,0 +1,106 @@
+{
+  "cv_examples": [
+    {
+      "name": "Sarah Johnson",
+      "domain": "INFORMATION-TECHNOLOGY",
+      "summary": "Experienced software architect with 8+ years in full-stack development and cloud infrastructure",
+      "skills": [
+        "Python",
+        "Java",
+        "AWS",
+        "Kubernetes",
+        "Docker",
+        "REST APIs",
+        "Microservices",
+        "Machine Learning"
+      ],
+      "experience": "Senior Software Engineer at Tech Corp (2019-Present) - Led development of cloud-native applications. Principal Engineer at StartupXYZ (2016-2019) - Architected microservices infrastructure.",
+      "education": "B.S. Computer Science, Stanford University"
+    },
+    {
+      "name": "Michael Chen",
+      "domain": "FINANCE",
+      "summary": "Quantitative analyst and financial strategist with expertise in algorithmic trading and risk management",
+      "skills": [
+        "Financial Modeling",
+        "Python",
+        "Risk Analysis",
+        "Portfolio Management",
+        "Excel VBA",
+        "SQL",
+        "Bloomberg Terminal",
+        "Statistics"
+      ],
+      "experience": "Senior Quantitative Analyst at Goldman Sachs (2018-Present) - Developed trading algorithms and risk frameworks. Financial Analyst at Morgan Stanley (2015-2018) - Managed multi-billion dollar portfolios.",
+      "education": "MBA Finance, Wharton Business School; B.S. Mathematics, MIT"
+    },
+    {
+      "name": "Emma Rodriguez",
+      "domain": "HEALTHCARE",
+      "summary": "Clinical nurse specialist with expertise in patient care management and healthcare quality improvement",
+      "skills": [
+        "Patient Care",
+        "Clinical Assessment",
+        "Electronic Health Records",
+        "Medication Management",
+        "Patient Education",
+        "Healthcare Compliance",
+        "Teamwork",
+        "Communication"
+      ],
+      "experience": "Clinical Nurse Specialist at City Hospital (2017-Present) - Managed 40+ patients daily, improved care protocols. RN at Regional Medical Center (2014-2017) - Provided emergency and critical care.",
+      "education": "BSN Nursing, University of California; RN License, State of California"
+    },
+    {
+      "name": "David Park",
+      "domain": "ENGINEERING",
+      "summary": "Mechanical engineer specializing in automotive design and manufacturing optimization",
+      "skills": [
+        "CAD Design",
+        "ANSYS",
+        "Manufacturing",
+        "Project Management",
+        "Process Optimization",
+        "MATLAB",
+        "Lean Six Sigma",
+        "Quality Assurance"
+      ],
+      "experience": "Senior Mechanical Engineer at AutoCorp (2018-Present) - Led vehicle component design, reduced manufacturing costs by 15%. Design Engineer at Industrial Systems (2015-2018).",
+      "education": "M.S. Mechanical Engineering, MIT; B.S. Mechanical Engineering, UC Berkeley"
+    },
+    {
+      "name": "Lisa Wong",
+      "domain": "DESIGNER",
+      "summary": "Creative UX/UI designer with passion for creating intuitive and beautiful digital experiences",
+      "skills": [
+        "Figma",
+        "Adobe XD",
+        "User Research",
+        "Wireframing",
+        "Prototyping",
+        "Web Design",
+        "Mobile Design",
+        "Design Systems"
+      ],
+      "experience": "Lead Designer at DesignStudio (2019-Present) - Designed user interfaces for 50+ digital products. UI Designer at TechCo (2017-2019) - Created responsive web applications.",
+      "education": "MFA Digital Design, School of Visual Arts; B.A. Graphic Design, Rhode Island School of Design"
+    },
+    {
+      "name": "James Wilson",
+      "domain": "SALES",
+      "summary": "Results-driven sales executive with proven track record of exceeding revenue targets",
+      "skills": [
+        "Sales Strategy",
+        "Negotiation",
+        "Client Relationship Management",
+        "Territory Management",
+        "Forecasting",
+        "Team Leadership",
+        "Presentation Skills",
+        "Business Development"
+      ],
+      "experience": "Senior Sales Director at SalesCo (2017-Present) - Managed $50M revenue, led team of 15. Account Executive at Global Sales (2014-2017) - Consistently exceeded quota.",
+      "education": "MBA Business Administration, Northwestern Kellogg School; B.S. Business, University of Texas"
+    }
+  ]
+}

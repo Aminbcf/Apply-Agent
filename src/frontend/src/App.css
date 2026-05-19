@@ -1,0 +1,159 @@
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.625rem;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface-strong);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.content {
+  padding: 2rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.hero,
+.panel,
+.metric-card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 0.75rem;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.hero-status {
+  min-width: 180px;
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.metric-card,
+.panel {
+  padding: 1.25rem;
+}
+
+.metric-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  margin-bottom: 1rem;
+}
+
+.metric-title,
+.status-label,
+.panel-badge,
+.eyebrow {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.metric-value {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+
+.panel-copy,
+.hero-copy,
+.metric-detail,
+.app-copy {
+  color: var(--muted);
+}
+
+.app-title,
+.hero h2,
+.panel h3 {
+  margin: 0.25rem 0 0.5rem;
+}
+
+@media (max-width: 1024px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    flex-direction: column;
+  }
+}
