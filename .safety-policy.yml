@@ -1,4 +1,3 @@
-version: 2
-policy:
-  audit:
-    ignore-vulnerabilities: []
+version: "1"
+ignore-vulnerabilities: []
+continue-on-vulnerability: false
