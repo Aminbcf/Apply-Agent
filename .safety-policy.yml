@@ -1,2 +1,11 @@
-version: 1.0
-ignore-vulnerabilities: {}
+project:
+	id: ""
+organization:
+	id: ""
+	name: ""
+security:
+	ignore-unpinned-requirements: true
+	ignore-cvss-severity-below: 0
+	ignore-cvss-unknown-severity: false
+	ignore-vulnerabilities: {}
+	continue-on-vulnerability-error: false

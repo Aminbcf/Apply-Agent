@@ -74,7 +74,6 @@ jobs:
           bandit -r . -f json
 
       - name: Backend dependency vulnerabilities
-        working-directory: src/backend
         run: |
           pip install safety
           safety check --json
