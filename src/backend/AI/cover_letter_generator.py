@@ -144,7 +144,7 @@ def build_latex_and_render_pdf(cover_text: str, candidate: Dict[str, Any], outpu
 
     # Run the engine twice to resolve layout
     for _ in range(2):
-        completed = subprocess.run([cmd, "-interaction=nonstopmode", "-output-directory", out_dir, tex_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        completed = subprocess.run([cmd, "-interaction=nonstopmode", "-output-directory", out_dir, tex_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # nosec: cmd is hardcoded to pdflatex|xelatex, tex_path is safe
         if completed.returncode != 0:
             raise RuntimeError(f"LaTeX failed (engine={cmd}): {completed.stderr.decode(errors='replace')}" )
 

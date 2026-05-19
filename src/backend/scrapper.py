@@ -27,7 +27,7 @@ def fetch_onet_database():
     print("Fetching O*NET Database...")
     onet_url = "https://www.onetcenter.org/dl_files/database/db_28_2_text.zip"
     
-    response = requests.get(onet_url)
+    response = requests.get(onet_url, timeout=30)
     if response.status_code == 200:
         z = zipfile.ZipFile(io.BytesIO(response.content))
         z.extractall(DIRS["onet"])
@@ -48,7 +48,7 @@ def fetch_esco_dataset():
     print("Fetching ESCO Occupations...")
     esco_url = "https://esco.ec.europa.eu/system/files/2022-01/occupations_en.csv"
     
-    response = requests.get(esco_url)
+    response = requests.get(esco_url, timeout=30)
     if response.status_code == 200:
         file_path = os.path.join(DIRS["esco"], "esco_occupations.csv")
         with open(file_path, "wb") as f:
@@ -73,7 +73,7 @@ def fetch_ooh_data(api_key=api_key):
     headers = {'Content-type': 'application/json'}
     data = json.dumps({"seriesid": ['CEU0800000001'], "registrationkey": api_key})
     
-    response = requests.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', data=data, headers=headers)
+    response = requests.post('https://api.bls.gov/publicAPI/v2/timeseries/data/', data=data, headers=headers, timeout=30)
     
     if response.status_code == 200:
         json_data = response.json()
