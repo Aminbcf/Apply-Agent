@@ -77,7 +77,7 @@ jobs:
         working-directory: src/backend
         run: |
           pip install safety
-          safety check --json --policy-file ../.safety-policy.yml
+          safety check --json --policy-file ../../.safety-policy.yml
 
       - name: Backend unit tests
         working-directory: src/backend
