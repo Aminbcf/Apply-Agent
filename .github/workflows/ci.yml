@@ -54,8 +54,26 @@ jobs:
         working-directory: src/frontend
         run: npm run build
 
+      - name: Validate SonarQube configuration
+        shell: pwsh
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || vars.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if (-not $env:SONAR_TOKEN) {
+            throw "SONAR_TOKEN is required for the SonarQube scan."
+          }
+
+          if (-not $env:SONAR_HOST_URL) {
+            throw "SONAR_HOST_URL is required and must include http:// or https://."
+          }
+
+          if ($env:SONAR_HOST_URL -notmatch '^https?://') {
+            throw "SONAR_HOST_URL must be an absolute URL such as https://sonarqube.example.com."
+          }
+
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || vars.SONAR_HOST_URL }}
