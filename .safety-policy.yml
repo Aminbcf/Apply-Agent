@@ -1,3 +1,2 @@
-version: "1"
-ignore-vulnerabilities: []
-continue-on-vulnerability: false
+version: 1.0
+ignore-vulnerabilities: {}
