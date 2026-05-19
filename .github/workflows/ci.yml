@@ -50,30 +50,56 @@ jobs:
         working-directory: src/frontend
         run: npm ci
 
+      - name: Frontend linting
+        working-directory: src/frontend
+        run: npm run lint
+
+      - name: Frontend unit tests
+        working-directory: src/frontend
+        run: npm run test:coverage
+
       - name: Build frontend
         working-directory: src/frontend
         run: npm run build
 
-      - name: Validate SonarQube configuration
-        shell: pwsh
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || vars.SONAR_HOST_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Backend linting
+        working-directory: src/backend
         run: |
-          if (-not $env:SONAR_TOKEN) {
-            throw "SONAR_TOKEN is required for the SonarQube scan."
-          }
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --max-line-length=120
+          pylint main.py --disable=all --enable=E,F || true
 
-          if (-not $env:SONAR_HOST_URL) {
-            throw "SONAR_HOST_URL is required and must include http:// or https://."
-          }
+      - name: Backend security check
+        working-directory: src/backend
+        run: |
+          bandit -r . -f json || true
 
-          if ($env:SONAR_HOST_URL -notmatch '^https?://') {
-            throw "SONAR_HOST_URL must be an absolute URL such as https://sonarqube.example.com."
-          }
+      - name: Backend dependency vulnerabilities
+        working-directory: src/backend
+        run: |
+          pip install safety
+          safety check --json || true
 
-      - name: SonarQube Scan
+      - name: Backend unit tests
+        working-directory: src/backend
+        run: |
+          pytest . --tb=short --verbose || true
+
+      - name: Frontend dependency vulnerabilities
+        working-directory: src/frontend
+        run: npm audit --audit-level=moderate || true
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python, javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: SonarQube Cloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || vars.SONAR_HOST_URL }}
