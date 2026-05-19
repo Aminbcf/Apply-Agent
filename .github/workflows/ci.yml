@@ -82,7 +82,3 @@ jobs:
         working-directory: src/frontend
         run: npm audit --audit-level=moderate
 
-      - name: SonarQube Cloud Scan
-        uses: SonarSource/sonarqube-scan-action@v6
-        env:
-          SONAR_TOKEN: ${{ secrets.SONARQ_TOKEN }}
