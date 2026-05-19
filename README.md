@@ -35,3 +35,7 @@ A standard **React + FastAPI (Python)** project layout.
    ```
 
 The launcher starts FastAPI immediately and also starts React when `src/front/package.json` exists.
+
+## CI Notes
+
+- The Safety dependency scan is temporarily disabled in CI due to policy file parsing errors on GitHub Actions. Re-enable once the Safety CLI policy handling is stable.

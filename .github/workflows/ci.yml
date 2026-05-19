@@ -73,11 +73,6 @@ jobs:
         run: |
           bandit -r . -f json
 
-      - name: Backend dependency vulnerabilities
-        run: |
-          pip install safety
-          safety check --json
-
       - name: Backend unit tests
         working-directory: src/backend
         run: |
