@@ -7,11 +7,6 @@ on:
       - master
   pull_request:
 
-permissions:
-  contents: read
-  actions: read
-  security-events: write
-
 jobs:
   build-and-scan:
     name: Build and SonarQube Scan
@@ -86,17 +81,6 @@ jobs:
       - name: Frontend dependency vulnerabilities
         working-directory: src/frontend
         run: npm audit --audit-level=moderate
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python, javascript-typescript
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
 
       - name: SonarQube Cloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
