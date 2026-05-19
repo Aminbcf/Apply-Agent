@@ -1,3 +1,6 @@
-[bandit]
-exclude_dirs = ['.venv', 'tests', '__pycache__']
-skip_tests = B101
+exclude_dirs:
+  - 'tests'
+  - '.venv'
+  - '__pycache__'
+skips:
+  - 'B101'

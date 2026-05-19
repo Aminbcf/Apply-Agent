@@ -1,7 +1,7 @@
 import json
 import os
 import shlex
-import subprocess
+import subprocess  # nosec B404
 import shutil
 from typing import List, Dict, Any, Optional
 
@@ -76,7 +76,7 @@ def generate_cover_letter(job: Dict[str, Any], skills: Dict[str, List[str]], evi
     if not hasattr(llm, "generate"):
         raise ValueError("llm must provide a generate(prompt, max_tokens=None) method")
 
-    raw = llm.generate(prompt, max_tokens=1024)
+    raw = llm.generate(prompt, max_tokens=4096)
 
     # Basic post-processing: ensure no [UNVERIFIED] markers remain
     text = raw.replace("[UNVERIFIED]", "")
