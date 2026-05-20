@@ -1,6 +1,4 @@
 .env
-Workflow.md
-docs/*
 node_modules/
 dist/
 target/
