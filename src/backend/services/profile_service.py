@@ -47,9 +47,13 @@ class ProfileService:
             languages=profile.languages or [],
             achievements=profile.achievements or [],
             career_goals=profile.career_goals,
+            raw_cv_text=profile.raw_cv_text,
+            parsed_cv_json=profile.parsed_cv_json,
         )
 
-    async def upsert_profile(self, db: AsyncSession, data: ProfileSchema) -> ProfileSchema:
+    async def upsert_profile(
+        self, db: AsyncSession, data: ProfileSchema
+    ) -> ProfileSchema:
         profile = await self.get_profile(db)
 
         if not profile:
@@ -64,15 +68,30 @@ class ProfileService:
         await db.refresh(profile)
         return self.to_schema(profile)
 
-    async def apply_cv_upload(self, db: AsyncSession, uploaded_file: UploadFile) -> ProfileSchema:
+    async def apply_cv_upload(
+        self, db: AsyncSession, uploaded_file: UploadFile
+    ) -> ProfileSchema:
         text = await self._extract_text_from_upload(uploaded_file)
-        patch = self._parse_cv_to_patch(text)
+        parsed_raw_dict = parse_raw_cv(text)
+
+        experience = parsed_raw_dict.get("experience") or []
+        education = parsed_raw_dict.get("education") or []
+        skills_list = parsed_raw_dict.get("skills") or []
+        skills: dict[str, Any] = (
+            {"general": skills_list} if skills_list else {}
+        )
+        patch = ParsedCvProfilePatch(
+            experience=experience, education=education, skills=skills
+        )
 
         existing_profile = await self.get_profile(db)
         if not existing_profile:
             existing_profile = UserProfile()
             db.add(existing_profile)
             await db.flush()
+
+        existing_profile.raw_cv_text = text
+        existing_profile.parsed_cv_json = parsed_raw_dict
 
         merged = self._merge_patch_into_profile(existing_profile, patch)
         await self._create_version(db, existing_profile, merged)
@@ -81,7 +100,9 @@ class ProfileService:
         await db.refresh(existing_profile)
         return self.to_schema(existing_profile)
 
-    def _apply_schema(self, profile: UserProfile, data: ProfileSchema) -> None:
+    def _apply_schema(
+        self, profile: UserProfile, data: ProfileSchema
+    ) -> None:
         profile.full_name = data.full_name
         profile.email = data.email
         profile.phone = data.phone
@@ -96,16 +117,42 @@ class ProfileService:
         profile.achievements = data.achievements
         profile.career_goals = data.career_goals
 
-    async def _create_version(self, db: AsyncSession, profile: UserProfile, data: ProfileSchema) -> None:
+        profile.raw_cv_text = data.raw_cv_text
+        profile.parsed_cv_json = data.parsed_cv_json
+
+        # Explicitly flag JSON columns as modified for SQLite nested updates
+        from sqlalchemy.orm.attributes import flag_modified
+        json_fields = [
+            "experience",
+            "education",
+            "projects",
+            "skills",
+            "certifications",
+            "languages",
+            "achievements",
+            "parsed_cv_json",
+        ]
+        for field in json_fields:
+            flag_modified(profile, field)
+
+    async def _create_version(
+        self, db: AsyncSession, profile: UserProfile, data: ProfileSchema
+    ) -> None:
         snapshot = data.model_dump()
-        version = UserProfileVersion(user_profile_id=profile.id, snapshot=snapshot)
+        version = UserProfileVersion(
+            user_profile_id=profile.id, snapshot=snapshot
+        )
         db.add(version)
 
-    async def _extract_text_from_upload(self, uploaded_file: UploadFile) -> str:
+    async def _extract_text_from_upload(
+        self, uploaded_file: UploadFile
+    ) -> str:
         filename = uploaded_file.filename or ""
         suffix = Path(filename).suffix.lower()
 
-        content = await self._read_upload_with_limit(uploaded_file, max_bytes=settings.cv_upload_max_bytes)
+        content = await self._read_upload_with_limit(
+            uploaded_file, max_bytes=settings.cv_upload_max_bytes
+        )
 
         if suffix == ".txt":
             return content.decode("utf-8", errors="replace")
@@ -114,9 +161,13 @@ class ProfileService:
         if suffix == ".docx":
             return self._extract_docx_text(content)
 
-        raise ValueError("Unsupported file type. Please upload a PDF, DOCX, or TXT CV.")
+        raise ValueError(
+            "Unsupported file type. Please upload a PDF, DOCX, or TXT CV."
+        )
 
-    async def _read_upload_with_limit(self, uploaded_file: UploadFile, *, max_bytes: int) -> bytes:
+    async def _read_upload_with_limit(
+        self, uploaded_file: UploadFile, *, max_bytes: int
+    ) -> bytes:
         if max_bytes <= 0:
             raise ValueError("Invalid upload size limit configuration.")
 
@@ -131,7 +182,9 @@ class ProfileService:
 
             bytes_read += len(chunk)
             if bytes_read > max_bytes:
-                raise ValueError(f"Upload too large. Max size is {max_bytes} bytes.")
+                raise ValueError(
+                    f"Upload too large. Max size is {max_bytes} bytes."
+                )
             chunks.append(chunk)
 
         return b"".join(chunks)
@@ -143,14 +196,19 @@ class ProfileService:
         try:
             reader = PdfReader(BytesIO(content))
             if getattr(reader, "is_encrypted", False):
-                raise ValueError("Encrypted PDFs are not supported. Please upload an unencrypted PDF.")
+                raise ValueError(
+                    "Encrypted PDFs are not supported. "
+                    "Please upload an unencrypted PDF."
+                )
 
             pages_text: list[str] = []
             for page in reader.pages:
                 pages_text.append(page.extract_text() or "")
             return "\n".join(pages_text).strip()
         except (PdfReadError, ValueError) as exc:
-            raise ValueError("Invalid PDF file. Please upload a valid PDF CV.") from exc
+            raise ValueError(
+                "Invalid PDF file. Please upload a valid PDF CV."
+            ) from exc
 
     def _extract_docx_text(self, content: bytes) -> str:
         from zipfile import BadZipFile
@@ -161,7 +219,9 @@ class ProfileService:
         try:
             doc = Document(BytesIO(content))
         except (BadZipFile, PackageNotFoundError, ValueError) as exc:
-            raise ValueError("Invalid DOCX file. Please upload a valid DOCX CV.") from exc
+            raise ValueError(
+                "Invalid DOCX file. Please upload a valid DOCX CV."
+            ) from exc
 
         return "\n".join(p.text for p in doc.paragraphs if p.text).strip()
 
@@ -171,11 +231,17 @@ class ProfileService:
         experience = parsed.get("experience") or []
         education = parsed.get("education") or []
         skills_list = parsed.get("skills") or []
-        skills: dict[str, Any] = {"general": skills_list} if skills_list else {}
+        skills: dict[str, Any] = (
+            {"general": skills_list} if skills_list else {}
+        )
 
-        return ParsedCvProfilePatch(experience=experience, education=education, skills=skills)
+        return ParsedCvProfilePatch(
+            experience=experience, education=education, skills=skills
+        )
 
-    def _merge_patch_into_profile(self, profile: UserProfile, patch: ParsedCvProfilePatch) -> ProfileSchema:
+    def _merge_patch_into_profile(
+        self, profile: UserProfile, patch: ParsedCvProfilePatch
+    ) -> ProfileSchema:
         current = self.to_schema(profile)
 
         merged_skills = dict(current.skills)

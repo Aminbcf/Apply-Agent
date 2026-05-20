@@ -4,7 +4,7 @@ import { Card } from "../../components/common/Card";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
 import { Badge } from "../../components/common/Badge";
-import { getProfile, saveProfile, uploadOnboardingCv, UserProfileData } from "../../services/api";
+import { getProfile, saveProfile, uploadOnboardingCv, getOnboardingDebug, UserProfileData, OnboardingDebugData } from "../../services/api";
 import "./Onboarding.css";
 
 const defaultProfile: UserProfileData = {
@@ -28,6 +28,12 @@ export function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [cvUploading, setCvUploading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Debugging States
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  const [debugData, setDebugData] = useState<OnboardingDebugData | null>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"raw" | "parsed" | "context">("raw");
 
   useEffect(() => {
     getProfile()
@@ -54,6 +60,34 @@ export function Onboarding() {
     }));
   };
 
+  const refreshDebug = async () => {
+    try {
+      const data = await getOnboardingDebug();
+      setDebugData(data);
+    } catch (err) {
+      console.error("Failed to refresh debugging details", err);
+    }
+  };
+
+  const handleToggleDebug = async () => {
+    if (debugEnabled) {
+      setDebugEnabled(false);
+      return;
+    }
+
+    setDebugLoading(true);
+    try {
+      const data = await getOnboardingDebug();
+      setDebugData(data);
+      setDebugEnabled(true);
+    } catch (err) {
+      console.error("Failed to load debugging details", err);
+      setMessage({ type: "error", text: "Failed to load debugging details from server." });
+    } finally {
+      setDebugLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -62,6 +96,9 @@ export function Onboarding() {
     try {
       await saveProfile(profile);
       setMessage({ type: "success", text: "Profile saved successfully! Onboarding updated." });
+      if (debugEnabled) {
+        await refreshDebug();
+      }
     } catch (err) {
       console.error("Failed to save profile", err);
       setMessage({ type: "error", text: "Failed to save profile. Please try again." });
@@ -87,6 +124,9 @@ export function Onboarding() {
         career_goals: updated.career_goals ?? "",
       });
       setMessage({ type: "success", text: "CV uploaded and parsed. Profile updated." });
+      // Dynamically fetch and update debug data since a new CV was parsed
+      const data = await getOnboardingDebug();
+      setDebugData(data);
     } catch (err) {
       console.error("Failed to upload CV", err);
       setMessage({ type: "error", text: "Failed to upload CV. Please try again." });
@@ -237,6 +277,135 @@ export function Onboarding() {
             </Button>
           </div>
         </form>
+
+        {/* Developer Debugging Panel */}
+        {(stepsCount === 3 || profile.experience.length > 0 || (profile.skills && Object.keys(profile.skills).length > 0)) && (
+          <div className="debug-toggle-wrapper">
+            <div className="debug-toggle-container">
+              <span className="debug-toggle-label">
+                <i className="bi bi-braces-asterisk text-primary" style={{ marginRight: "0.5rem" }} />
+                <strong>Developer Tools:</strong> Inspect parser and LLM prompt telemetry.
+              </span>
+              <Button
+                type="button"
+                variant={debugEnabled ? "danger" : "secondary"}
+                onClick={handleToggleDebug}
+                loading={debugLoading}
+                icon={debugEnabled ? "bi-bug-fill" : "bi-bug"}
+              >
+                {debugEnabled ? "Disable Debug Mode" : "Enable Debug Mode"}
+              </Button>
+            </div>
+
+            {debugEnabled && debugData && (
+              <Card padding="lg" className="debug-dashboard-card" style={{ marginTop: "1.5rem" }}>
+                <div className="debug-header">
+                  <div className="debug-title-group">
+                    <h3>CV Parser & LLM Context Telemetry</h3>
+                    <p className="card-sub">Inspect how the parser structured your CV and formatted the LLM system prompt.</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={refreshDebug}
+                    icon="bi-arrow-clockwise"
+                  >
+                    Refresh
+                  </Button>
+                </div>
+                
+                <hr className="divider" />
+                
+                <div className="debug-tabs" role="tablist">
+                  <button
+                    type="button"
+                    className={`debug-tab ${activeTab === "raw" ? "active" : ""}`}
+                    onClick={() => setActiveTab("raw")}
+                    role="tab"
+                    aria-selected={activeTab === "raw"}
+                  >
+                    <i className="bi bi-file-earmark-text" /> Raw CV Text
+                  </button>
+                  <button
+                    type="button"
+                    className={`debug-tab ${activeTab === "parsed" ? "active" : ""}`}
+                    onClick={() => setActiveTab("parsed")}
+                    role="tab"
+                    aria-selected={activeTab === "parsed"}
+                  >
+                    <i className="bi bi-diagram-3" /> Parser Interpretation
+                  </button>
+                  <button
+                    type="button"
+                    className={`debug-tab ${activeTab === "context" ? "active" : ""}`}
+                    onClick={() => setActiveTab("context")}
+                    role="tab"
+                    aria-selected={activeTab === "context"}
+                  >
+                    <i className="bi bi-cpu" /> LLM Prompt Context
+                  </button>
+                </div>
+
+                <div className="debug-tab-content">
+                  {activeTab === "raw" && (
+                    <div className="debug-code-container">
+                      <div className="debug-code-header">
+                        <span>raw_cv_text.txt</span>
+                        <button
+                          type="button"
+                          className="copy-btn"
+                          onClick={() => navigator.clipboard.writeText(debugData.raw_cv_text || "")}
+                        >
+                          <i className="bi bi-clipboard" /> Copy
+                        </button>
+                      </div>
+                      <pre className="debug-pre">
+                        {debugData.raw_cv_text ? debugData.raw_cv_text : "No raw CV text parsed. Please upload a CV first in Step 2."}
+                      </pre>
+                    </div>
+                  )}
+
+                  {activeTab === "parsed" && (
+                    <div className="debug-code-container">
+                      <div className="debug-code-header">
+                        <span>parsed_cv_json.json</span>
+                        <button
+                          type="button"
+                          className="copy-btn"
+                          onClick={() => navigator.clipboard.writeText(JSON.stringify(debugData.parsed_cv_json, null, 2))}
+                        >
+                          <i className="bi bi-clipboard" /> Copy
+                        </button>
+                      </div>
+                      <pre className="debug-pre">
+                        {debugData.parsed_cv_json ? JSON.stringify(debugData.parsed_cv_json, null, 2) : "No parsed CV telemetry. Please upload a CV first in Step 2."}
+                      </pre>
+                    </div>
+                  )}
+
+                  {activeTab === "context" && (
+                    <div className="debug-code-container">
+                      <div className="debug-code-header">
+                        <span>llm_context_payload.json</span>
+                        <button
+                          type="button"
+                          className="copy-btn"
+                          onClick={() => navigator.clipboard.writeText(JSON.stringify(debugData.llm_context, null, 2))}
+                        >
+                          <i className="bi bi-clipboard" /> Copy
+                        </button>
+                      </div>
+                      <pre className="debug-pre">
+                        {debugData.llm_context ? JSON.stringify(debugData.llm_context, null, 2) : "No LLM context structured. Complete onboarding first."}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

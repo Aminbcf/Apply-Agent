@@ -1,11 +1,14 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from database import Base, get_db
 from main import app
 from models.job_application import JobApplication
-from models.user_profile import UserProfile
 
 # Mark all tests in this file as async using anyio
 pytestmark = pytest.mark.anyio
@@ -39,8 +42,10 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture
 async def client():
-    """AsyncClient fixture for making asynchronous requests to the FastAPI application."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as ac:
+    """AsyncClient fixture for requests to the application."""
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="https://test"
+    ) as ac:
         yield ac
 
 
@@ -93,10 +98,10 @@ async def test_profile_save_and_retrieve(client):
     assert data["email"] == "test@example.com"
 
     # Check onboarding status updates
+    # Name/email (step 1), exp/skills (step 2), career_goals (step 3)
     response = await client.get("/onboarding/status")
     assert response.status_code == 200
     data = response.json()
-    # Name/email filled (step 1), experience/skills filled (step 2), career_goals filled (step 3)
     assert data["status"] == "completed"
     assert data["steps_completed"] == 3
 
@@ -163,3 +168,54 @@ async def test_onboarding_cv_upload_txt_updates_profile(client):
     assert status.status_code == 200
     status_data = status.json()
     assert status_data["steps_completed"] >= 1
+
+
+async def test_onboarding_debug_endpoints(client):
+    """Test onboarding debug endpoints and LLM context generation."""
+    # 1. Access debug endpoint before profile exists should return 404
+    response = await client.get("/onboarding/debug")
+    assert response.status_code == 404
+    expected_err = "No profile found. Please complete onboarding first."
+    assert response.json()["detail"] == expected_err
+
+    # 2. Upload a CV to create a profile and record telemetry
+    cv_text = (
+        "Summary\n"
+        "Experienced engineer.\n\n"
+        "Experience\n"
+        "Software Engineer\n"
+        "Acme Corp\n"
+        "City, State\n"
+        "Did stuff\n\n"
+        "Skills\n"
+        "Python, TypeScript, FastAPI\n"
+    )
+
+    files = {
+        "file": ("cv.txt", cv_text.encode("utf-8"), "text/plain"),
+    }
+    response = await client.post("/onboarding/cv", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["raw_cv_text"] == cv_text
+    assert data["parsed_cv_json"] is not None
+
+    # 3. Access debug endpoint and assert structure
+    response = await client.get("/onboarding/debug")
+    assert response.status_code == 200
+    debug_data = response.json()
+
+    assert debug_data["raw_cv_text"] == cv_text
+    assert debug_data["parsed_cv_json"] is not None
+    assert debug_data["llm_context"] is not None
+
+    # 4. Assert llm_context has correct structure
+    llm_context = debug_data["llm_context"]
+    assert "candidate" in llm_context
+    assert "skills" in llm_context
+    assert "evidence" in llm_context
+    assert "job" in llm_context
+    assert "constraints" in llm_context
+
+    assert llm_context["skills"]["req_skills"] != []
+    assert llm_context["evidence"] != []

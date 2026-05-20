@@ -23,9 +23,20 @@ class ProfileSchema(BaseModel):
 
     career_goals: str | None = None
 
+    raw_cv_text: str | None = None
+    parsed_cv_json: dict[str, Any] | None = None
+
 
 class OnboardingStatusSchema(BaseModel):
     """Pydantic schema for Onboarding Status."""
 
     status: str  # "pending" or "completed"
     steps_completed: int
+
+
+class OnboardingDebugSchema(BaseModel):
+    """Pydantic schema for Onboarding Debugging Mode."""
+
+    raw_cv_text: str | None = None
+    parsed_cv_json: dict[str, Any] | None = None
+    llm_context: dict[str, Any] | None = None
