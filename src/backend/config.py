@@ -27,6 +27,8 @@ class Settings(BaseSettings):
         ]
     )
 
+    cv_upload_max_bytes: int = 5 * 1024 * 1024
+
     @property
     def database_url(self) -> str:
         return f"sqlite+aiosqlite:///{self.database_path.as_posix()}"

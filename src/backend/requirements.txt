@@ -16,3 +16,7 @@ pytest-xdist
 pytest-asyncio
 httpx
 safety
+pypdf
+python-docx
+python-multipart
+

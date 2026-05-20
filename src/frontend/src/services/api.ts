@@ -38,6 +38,20 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function requestFormData<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${getBaseUrl()}${path}`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as ApiErrorShape | null;
+    throw new ApiError(response.status, payload?.detail ?? payload?.message ?? response.statusText, payload);
+  }
+
+  return (await response.json()) as T;
+}
+
 export const apiClient = {
   get: <T>(path: string) => requestJson<T>(path),
   post: <T, B = undefined>(path: string, body?: B) =>
@@ -85,3 +99,9 @@ export const getProfile = () => apiClient.get<UserProfileData>("/profile/");
 
 export const saveProfile = (profile: UserProfileData) =>
   apiClient.post<UserProfileData, UserProfileData>("/profile/", profile);
+
+export const uploadOnboardingCv = (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  return requestFormData<UserProfileData>("/onboarding/cv", formData);
+};
