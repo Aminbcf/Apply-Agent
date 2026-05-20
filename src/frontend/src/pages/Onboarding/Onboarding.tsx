@@ -4,7 +4,7 @@ import { Card } from "../../components/common/Card";
 import { Input } from "../../components/common/Input";
 import { Button } from "../../components/common/Button";
 import { Badge } from "../../components/common/Badge";
-import { getProfile, saveProfile, UserProfileData } from "../../services/api";
+import { getProfile, saveProfile, uploadOnboardingCv, UserProfileData } from "../../services/api";
 import "./Onboarding.css";
 
 const defaultProfile: UserProfileData = {
@@ -26,6 +26,7 @@ export function Onboarding() {
   const [profile, setProfile] = useState<UserProfileData>(defaultProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [cvUploading, setCvUploading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
@@ -69,6 +70,31 @@ export function Onboarding() {
     }
   };
 
+  const handleCvUpload = async (file: File | null) => {
+    if (!file) return;
+
+    setCvUploading(true);
+    setMessage(null);
+    try {
+      const updated = await uploadOnboardingCv(file);
+      setProfile({
+        ...defaultProfile,
+        ...updated,
+        full_name: updated.full_name ?? "",
+        email: updated.email ?? "",
+        phone: updated.phone ?? "",
+        location: updated.location ?? "",
+        career_goals: updated.career_goals ?? "",
+      });
+      setMessage({ type: "success", text: "CV uploaded and parsed. Profile updated." });
+    } catch (err) {
+      console.error("Failed to upload CV", err);
+      setMessage({ type: "error", text: "Failed to upload CV. Please try again." });
+    } finally {
+      setCvUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -82,7 +108,7 @@ export function Onboarding() {
 
   // Count step completeness
   const step1Complete = !!profile.full_name && !!profile.email;
-  const step2Complete = true; // Placeholder for experience/skills
+  const step2Complete = profile.experience.length > 0 || Object.keys(profile.skills).length > 0;
   const step3Complete = !!profile.career_goals;
   
   let stepsCount = 0;
@@ -160,13 +186,22 @@ export function Onboarding() {
             
             <div className="placeholder-section">
               <div className="info-box">
-                <i className="bi bi-info-circle-fill text-primary" />
+                <i className="bi bi-upload text-primary" />
                 <p>
-                  <strong>CV Upload & CV Parsing coming soon!</strong>
-                  <br />
-                  Soon, you will be able to upload a PDF/Word CV and we will automatically parse your full experience, education, and skills.
+                  Upload a CV (PDF/DOCX/TXT) and we'll auto-fill experience, education, and skills.
                 </p>
               </div>
+
+              <Input
+                label="Upload CV"
+                type="file"
+                accept=".pdf,.docx,.txt"
+                icon="bi-file-earmark-arrow-up"
+                disabled={cvUploading}
+                onChange={(e) => handleCvUpload(e.currentTarget.files?.item(0) ?? null)}
+              />
+
+              {cvUploading && <p style={{ marginTop: "0.75rem" }}>Parsing your CV...</p>}
             </div>
           </Card>
 

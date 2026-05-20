@@ -133,3 +133,33 @@ async def test_dashboard_stats(client):
     data = response.json()
     # active_applications should count non-archived ones
     assert data["active_applications"] == 1
+
+
+async def test_onboarding_cv_upload_txt_updates_profile(client):
+    cv_text = (
+        "Summary\n"
+        "Experienced engineer.\n\n"
+        "Experience\n"
+        "Software Engineer\n"
+        "Acme Corp\n"
+        "City, State\n"
+        "Did stuff\n\n"
+        "Skills\n"
+        "Python, TypeScript, FastAPI\n"
+    )
+
+    files = {
+        "file": ("cv.txt", cv_text.encode("utf-8"), "text/plain"),
+    }
+    response = await client.post("/onboarding/cv", files=files)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["experience"] != []
+    assert "general" in data["skills"]
+    assert "Python" in data["skills"]["general"]
+
+    status = await client.get("/onboarding/status")
+    assert status.status_code == 200
+    status_data = status.json()
+    assert status_data["steps_completed"] >= 1

@@ -6,6 +6,7 @@ import * as api from "../../../services/api";
 vi.mock("../../../services/api", () => ({
   getProfile: vi.fn(),
   saveProfile: vi.fn(),
+  uploadOnboardingCv: vi.fn(),
 }));
 
 describe("Onboarding Component", () => {

@@ -1,20 +1,15 @@
-from typing import Annotated, Optional
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from database import get_db
-from models.user_profile import UserProfile
+from schemas.profile import OnboardingStatusSchema, ProfileSchema
+from services.profile_service import ProfileService
 
 router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
-
-class OnboardingStatusSchema(BaseModel):
-    """Pydantic schema for Onboarding Status."""
-
-    status: str  # "pending" or "completed"
-    steps_completed: int
+profile_service = ProfileService()
 
 
 @router.get("/status")
@@ -22,22 +17,29 @@ async def get_onboarding_status(
     db: Annotated[AsyncSession, Depends(get_db)]
 ) -> OnboardingStatusSchema:
     """Dynamically compute onboarding status based on database UserProfile state."""
-    result = await db.execute(select(UserProfile))
-    profile = result.scalars().first()
-
+    profile = await profile_service.get_profile(db)
     if not profile:
         return OnboardingStatusSchema(status="pending", steps_completed=0)
 
     steps = 0
-    # Step 1: Basic Info (Name & Email)
     if profile.full_name and profile.email:
         steps += 1
-    # Step 2: Experience or Skills
-    if profile.experience or profile.skills:
+    if (profile.experience and len(profile.experience) > 0) or (profile.skills and len(profile.skills) > 0):
         steps += 1
-    # Step 3: Career Goals
     if profile.career_goals:
         steps += 1
 
-    status = "completed" if steps >= 3 else "pending"
-    return OnboardingStatusSchema(status=status, steps_completed=steps)
+    return OnboardingStatusSchema(status="completed" if steps >= 3 else "pending", steps_completed=steps)
+
+
+@router.post("/cv", response_model=ProfileSchema)
+async def upload_cv(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    file: UploadFile = File(...),
+) -> ProfileSchema:
+    """Upload a CV (PDF/DOCX/TXT), parse it, and merge results into the profile."""
+    try:
+        return await profile_service.apply_cv_upload(db, file)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
