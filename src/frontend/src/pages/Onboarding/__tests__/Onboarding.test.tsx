@@ -7,6 +7,7 @@ vi.mock("../../../services/api", () => ({
   getProfile: vi.fn(),
   saveProfile: vi.fn(),
   uploadOnboardingCv: vi.fn(),
+  getOnboardingDebug: vi.fn(),
 }));
 
 describe("Onboarding Component", () => {
@@ -63,7 +64,7 @@ describe("Onboarding Component", () => {
       achievements: [],
     });
 
-    vi.mocked(api.saveProfile).mockResolvedValue({} as any);
+    vi.mocked(api.saveProfile).mockResolvedValue({} as api.UserProfileData);
 
     render(<Onboarding />);
 
@@ -87,6 +88,65 @@ describe("Onboarding Component", () => {
         })
       );
       expect(screen.getByText("Profile saved successfully! Onboarding updated.")).toBeDefined();
+    });
+  });
+
+  it("shows developer debugging panel toggle when conditions are met and toggles it successfully", async () => {
+    vi.mocked(api.getProfile).mockResolvedValue({
+      full_name: "Jane Doe",
+      email: "jane@example.com",
+      phone: "123456789",
+      location: "Paris",
+      career_goals: "Build neat apps",
+      experience: [{"company": "Acme", "role": "Dev"}],
+      education: [],
+      projects: [],
+      skills: {},
+      certifications: [],
+      languages: [],
+      achievements: [],
+    });
+
+    vi.mocked(api.getOnboardingDebug).mockResolvedValue({
+      raw_cv_text: "Parsed raw CV text content",
+      parsed_cv_json: { experience: [{"company": "Acme"}] },
+      llm_context: { candidate: { name: "Jane Doe" } },
+    });
+
+    render(<Onboarding />);
+
+    await waitFor(() => {
+      expect(screen.queryByText("Loading your profile...")).toBeNull();
+    });
+
+    // Toggle button should be visible
+    const toggleButton = screen.getByText("Enable Debug Mode");
+    expect(toggleButton).toBeDefined();
+
+    // Click to enable debug mode
+    fireEvent.click(toggleButton);
+
+    await waitFor(() => {
+      expect(api.getOnboardingDebug).toHaveBeenCalled();
+      expect(screen.getByText("CV Parser & LLM Context Telemetry")).toBeDefined();
+      expect(screen.getByText("raw_cv_text.txt")).toBeDefined();
+      expect(screen.getByText("Parsed raw CV text content")).toBeDefined();
+    });
+
+    // Switch tab to Parser Interpretation
+    const parserTab = screen.getByText("Parser Interpretation");
+    fireEvent.click(parserTab);
+
+    await waitFor(() => {
+      expect(screen.getByText("parsed_cv_json.json")).toBeDefined();
+    });
+
+    // Disable debug mode
+    const disableButton = screen.getByText("Disable Debug Mode");
+    fireEvent.click(disableButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText("CV Parser & LLM Context Telemetry")).toBeNull();
     });
   });
 });

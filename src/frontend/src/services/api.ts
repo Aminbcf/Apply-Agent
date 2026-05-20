@@ -105,3 +105,11 @@ export const uploadOnboardingCv = (file: File) => {
   formData.append("file", file);
   return requestFormData<UserProfileData>("/onboarding/cv", formData);
 };
+
+export type OnboardingDebugData = {
+  raw_cv_text: string | null;
+  parsed_cv_json: Record<string, unknown> | null;
+  llm_context: Record<string, unknown> | null;
+};
+
+export const getOnboardingDebug = () => apiClient.get<OnboardingDebugData>("/onboarding/debug");
