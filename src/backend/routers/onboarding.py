@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,9 +17,9 @@ class OnboardingStatusSchema(BaseModel):
     steps_completed: int
 
 
-@router.get("/status", response_model=OnboardingStatusSchema)
+@router.get("/status")
 async def get_onboarding_status(
-    db: AsyncSession = Depends(get_db)
+    db: Annotated[AsyncSession, Depends(get_db)]
 ) -> OnboardingStatusSchema:
     """Dynamically compute onboarding status based on database UserProfile state."""
     result = await db.execute(select(UserProfile))

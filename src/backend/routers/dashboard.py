@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +11,7 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
 @router.get("/stats")
-async def get_dashboard_stats(db: AsyncSession = Depends(get_db)) -> dict[str, int]:
+async def get_dashboard_stats(db: Annotated[AsyncSession, Depends(get_db)]) -> dict[str, int]:
     """Get dynamic dashboard statistics from the database."""
     # Count active (non-archived) job applications
     result = await db.execute(

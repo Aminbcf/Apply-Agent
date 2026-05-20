@@ -22,9 +22,9 @@ def run_test():
             except AssertionError as e:
                 print("TEST FAILED:", e)
                 return 2
-            except Exception as e:
+            except Exception:
                 import logging
-                logging.error("TEST ERROR: %s", e, exc_info=True)
+                logging.exception("TEST ERROR")
                 return 3
         else:
             print("No test function found")

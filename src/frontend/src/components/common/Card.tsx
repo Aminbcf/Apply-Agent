@@ -29,22 +29,29 @@ export function Card({
     .filter(Boolean)
     .join(" ");
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (onClick && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
       onClick();
     }
   };
 
+  if (isInteractive) {
+    return (
+      <button
+        type="button"
+        className={classes}
+        onClick={onClick}
+        onKeyDown={handleKeyDown}
+        style={style}
+      >
+        {children}
+      </button>
+    );
+  }
+
   return (
-    <div
-      className={classes}
-      onClick={onClick}
-      onKeyDown={isInteractive ? handleKeyDown : undefined}
-      role={isInteractive ? "button" : undefined}
-      tabIndex={isInteractive ? 0 : undefined}
-      style={style}
-    >
+    <div className={classes} style={style}>
       {children}
     </div>
   );

@@ -33,3 +33,15 @@
 .card-interactive:active {
   transform: scale(0.99);
 }
+
+button.card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  box-sizing: border-box;
+}

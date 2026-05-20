@@ -61,7 +61,7 @@
 [data-theme="dark"] .alert-success {
   background-color: rgba(6, 95, 70, 0.15);
   border-color: rgba(6, 95, 70, 0.3);
-  color: #34d399;
+  color: #a7f3d0;
 }
 
 .alert-error {
@@ -73,7 +73,7 @@
 [data-theme="dark"] .alert-error {
   background-color: rgba(153, 27, 27, 0.15);
   border-color: rgba(153, 27, 27, 0.3);
-  color: #f87171;
+  color: #fecaca;
 }
 
 .form-card {

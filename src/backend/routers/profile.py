@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,8 +27,8 @@ class ProfileSchema(BaseModel):
     career_goals: Optional[str] = None
 
 
-@router.get("/", response_model=ProfileSchema)
-async def get_profile(db: AsyncSession = Depends(get_db)) -> ProfileSchema:
+@router.get("/")
+async def get_profile(db: Annotated[AsyncSession, Depends(get_db)]) -> ProfileSchema:
     """Retrieve the persistent user profile from the database."""
     result = await db.execute(select(UserProfile))
     profile = result.scalars().first()
@@ -51,9 +51,10 @@ async def get_profile(db: AsyncSession = Depends(get_db)) -> ProfileSchema:
     )
 
 
-@router.post("/", response_model=ProfileSchema)
+@router.post("/")
 async def save_profile(
-    profile_data: ProfileSchema, db: AsyncSession = Depends(get_db)
+    profile_data: ProfileSchema,
+    db: Annotated[AsyncSession, Depends(get_db)]
 ) -> ProfileSchema:
     """Save or update the persistent user profile in the database."""
     result = await db.execute(select(UserProfile))

@@ -1,5 +1,5 @@
 import pytest
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from database import Base, get_db
@@ -35,21 +35,27 @@ async def override_get_db():
 
 # Override the database dependency in the FastAPI application
 app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
 
 
-async def test_onboarding_default_status():
+@pytest.fixture
+async def client():
+    """AsyncClient fixture for making asynchronous requests to the FastAPI application."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+
+
+async def test_onboarding_default_status(client):
     """Test the default onboarding status when no profile exists."""
-    response = client.get("/onboarding/status")
+    response = await client.get("/onboarding/status")
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "pending"
     assert data["steps_completed"] == 0
 
 
-async def test_profile_default_get():
+async def test_profile_default_get(client):
     """Test getting profile when none exists returns a blank schema."""
-    response = client.get("/profile/")
+    response = await client.get("/profile/")
     assert response.status_code == 200
     data = response.json()
     assert data["full_name"] is None
@@ -58,7 +64,7 @@ async def test_profile_default_get():
     assert data["skills"] == {}
 
 
-async def test_profile_save_and_retrieve():
+async def test_profile_save_and_retrieve(client):
     """Test saving a profile and then retrieving it."""
     profile_payload = {
         "full_name": "Test User",
@@ -71,7 +77,7 @@ async def test_profile_save_and_retrieve():
     }
 
     # Save profile
-    response = client.post("/profile/", json=profile_payload)
+    response = await client.post("/profile/", json=profile_payload)
     assert response.status_code == 200
     data = response.json()
     assert data["full_name"] == "Test User"
@@ -80,14 +86,14 @@ async def test_profile_save_and_retrieve():
     assert data["skills"] == {"languages": ["Python", "JavaScript"]}
 
     # Retrieve profile
-    response = client.get("/profile/")
+    response = await client.get("/profile/")
     assert response.status_code == 200
     data = response.json()
     assert data["full_name"] == "Test User"
     assert data["email"] == "test@example.com"
 
     # Check onboarding status updates
-    response = client.get("/onboarding/status")
+    response = await client.get("/onboarding/status")
     assert response.status_code == 200
     data = response.json()
     # Name/email filled (step 1), experience/skills filled (step 2), career_goals filled (step 3)
@@ -95,10 +101,10 @@ async def test_profile_save_and_retrieve():
     assert data["steps_completed"] == 3
 
 
-async def test_dashboard_stats():
+async def test_dashboard_stats(client):
     """Test that dashboard stats dynamically count job applications."""
     # Default stats
-    response = client.get("/dashboard/stats")
+    response = await client.get("/dashboard/stats")
     assert response.status_code == 200
     data = response.json()
     assert data["active_applications"] == 0
@@ -122,7 +128,7 @@ async def test_dashboard_stats():
         await session.commit()
 
     # Query stats again
-    response = client.get("/dashboard/stats")
+    response = await client.get("/dashboard/stats")
     assert response.status_code == 200
     data = response.json()
     # active_applications should count non-archived ones

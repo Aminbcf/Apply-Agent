@@ -52,8 +52,8 @@ def generate_cover_letter(job: Dict[str, Any], skills: Dict[str, List[str]], evi
         if os.path.exists(instr_path):
             with open(instr_path, "r", encoding="utf8") as fh:
                 system_prompt = fh.read()
-    except Exception as e:
-        logger.error("Failed to load cover letter instructions: %s", e)
+    except Exception:
+        logger.exception("Failed to load cover letter instructions")
         system_prompt = ""
 
     # Build compact JSON context to inject into the prompt

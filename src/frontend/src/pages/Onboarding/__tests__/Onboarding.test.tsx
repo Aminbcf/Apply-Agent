@@ -62,7 +62,7 @@ describe("Onboarding Component", () => {
       achievements: [],
     });
 
-    vi.mocked(api.saveProfile).mockResolvedValue({} as api.UserProfileData);
+    vi.mocked(api.saveProfile).mockResolvedValue({} as any);
 
     render(<Onboarding />);
 

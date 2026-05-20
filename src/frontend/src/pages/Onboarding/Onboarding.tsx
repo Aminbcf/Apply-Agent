@@ -23,7 +23,7 @@ const defaultProfile: UserProfileData = {
 };
 
 export function Onboarding() {
-  const [profile, setProfileState] = useState<UserProfileData>(defaultProfile);
+  const [profile, setProfile] = useState<UserProfileData>(defaultProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -32,7 +32,7 @@ export function Onboarding() {
     getProfile()
       .then((data) => {
         // Fallback null fields to empty string for controlled inputs
-        setProfileState({
+        setProfile({
           ...defaultProfile,
           ...data,
           full_name: data.full_name ?? "",
@@ -47,7 +47,7 @@ export function Onboarding() {
   }, []);
 
   const handleInputChange = (field: keyof UserProfileData, value: string) => {
-    setProfileState((prev) => ({
+    setProfile((prev) => ({
       ...prev,
       [field]: value,
     }));
