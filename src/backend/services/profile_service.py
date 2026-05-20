@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from AI.raw_cv_parser import parse_raw_cv
+from config import settings
 from models.user_profile import UserProfile
 from models.user_profile_version import UserProfileVersion
 from schemas.profile import ProfileSchema
@@ -103,7 +104,8 @@ class ProfileService:
     async def _extract_text_from_upload(self, uploaded_file: UploadFile) -> str:
         filename = uploaded_file.filename or ""
         suffix = Path(filename).suffix.lower()
-        content = await uploaded_file.read()
+
+        content = await self._read_upload_with_limit(uploaded_file, max_bytes=settings.cv_upload_max_bytes)
 
         if suffix == ".txt":
             return content.decode("utf-8", errors="replace")
@@ -114,19 +116,53 @@ class ProfileService:
 
         raise ValueError("Unsupported file type. Please upload a PDF, DOCX, or TXT CV.")
 
+    async def _read_upload_with_limit(self, uploaded_file: UploadFile, *, max_bytes: int) -> bytes:
+        if max_bytes <= 0:
+            raise ValueError("Invalid upload size limit configuration.")
+
+        chunks: list[bytes] = []
+        bytes_read = 0
+        chunk_size = 1024 * 1024
+
+        while True:
+            chunk = await uploaded_file.read(chunk_size)
+            if not chunk:
+                break
+
+            bytes_read += len(chunk)
+            if bytes_read > max_bytes:
+                raise ValueError(f"Upload too large. Max size is {max_bytes} bytes.")
+            chunks.append(chunk)
+
+        return b"".join(chunks)
+
     def _extract_pdf_text(self, content: bytes) -> str:
         from pypdf import PdfReader
+        from pypdf.errors import PdfReadError
 
-        reader = PdfReader(BytesIO(content))
-        pages_text: list[str] = []
-        for page in reader.pages:
-            pages_text.append(page.extract_text() or "")
-        return "\n".join(pages_text).strip()
+        try:
+            reader = PdfReader(BytesIO(content))
+            if getattr(reader, "is_encrypted", False):
+                raise ValueError("Encrypted PDFs are not supported. Please upload an unencrypted PDF.")
+
+            pages_text: list[str] = []
+            for page in reader.pages:
+                pages_text.append(page.extract_text() or "")
+            return "\n".join(pages_text).strip()
+        except (PdfReadError, ValueError) as exc:
+            raise ValueError("Invalid PDF file. Please upload a valid PDF CV.") from exc
 
     def _extract_docx_text(self, content: bytes) -> str:
-        from docx import Document
+        from zipfile import BadZipFile
 
-        doc = Document(BytesIO(content))
+        from docx import Document
+        from docx.opc.exceptions import PackageNotFoundError
+
+        try:
+            doc = Document(BytesIO(content))
+        except (BadZipFile, PackageNotFoundError, ValueError) as exc:
+            raise ValueError("Invalid DOCX file. Please upload a valid DOCX CV.") from exc
+
         return "\n".join(p.text for p in doc.paragraphs if p.text).strip()
 
     def _parse_cv_to_patch(self, cv_text: str) -> ParsedCvProfilePatch:
