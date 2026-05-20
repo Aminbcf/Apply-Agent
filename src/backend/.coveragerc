@@ -1,0 +1,8 @@
+[run]
+omit =
+    AI/demo.py
+    AI/parse_raw_cv_example.py
+    AI/run_test_runner.py
+    scrapper.py
+    tests/*
+    test_*.py

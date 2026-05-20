@@ -193,10 +193,10 @@ def main():
         print("  2. Run the API: uvicorn main:app --reload")
         print("  3. Visit http://localhost:8000/docs for interactive API docs")
         
-    except Exception as e:
-        print(f"\n❌ Error during demo: {e}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        import logging
+        logging.basicConfig(level=logging.ERROR)
+        logging.exception("Error during demo")
         return 1
     
     return 0

@@ -27,9 +27,9 @@ def main():
     
     print("\n" + "="*50)
     if result.returncode == 0:
-        print("✅ All tests passed successfully!")
+        print("[SUCCESS] All tests passed successfully!")
     else:
-        print("❌ Some tests failed. Check the output above.")
+        print("[FAILURE] Some tests failed. Check the output above.")
     print("="*50)
         
     sys.exit(result.returncode)

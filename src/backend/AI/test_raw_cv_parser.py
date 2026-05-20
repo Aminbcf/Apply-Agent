@@ -192,10 +192,9 @@ def test_raw_cv_parser():
             
             print(f"\n  ✓ Test PASSED")
             
-        except Exception as e:
-            print(f"  ❌ Test FAILED: {str(e)}")
-            import traceback
-            traceback.print_exc()
+        except Exception:
+            import logging
+            logging.exception("Test FAILED")
     
     print("\n" + "="*80)
     print("TEST SUITE COMPLETE")

@@ -13,6 +13,11 @@ export default defineConfig({
       exclude: [
         'node_modules/',
         'src/**/*.d.ts',
+        'eslint.config.js',
+        'vite.config.ts',
+        'vitest.config.ts',
+        'src/main.tsx',
+        'dist/**'
       ]
     }
   },

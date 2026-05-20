@@ -28,9 +28,9 @@ try {
 Write-Host ""
 Write-Host "==================================================" -ForegroundColor Cyan
 if ($exitCode -eq 0) {
-    Write-Host "✅ All tests passed successfully!" -ForegroundColor Green
+    Write-Host "All tests passed successfully!" -ForegroundColor Green
 } else {
-    Write-Host "❌ Some tests failed. Check the output above." -ForegroundColor Red
+    Write-Host "Some tests failed. Check the output above." -ForegroundColor Red
 }
 Write-Host "==================================================" -ForegroundColor Cyan
 

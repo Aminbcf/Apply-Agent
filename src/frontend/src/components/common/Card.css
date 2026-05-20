@@ -1,0 +1,47 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: border-color 150ms ease-out, transform 150ms ease-out;
+}
+
+.card-p-none {
+  padding: 0;
+}
+
+.card-p-sm {
+  padding: 1rem;
+}
+
+.card-p-md {
+  padding: 1.5rem;
+}
+
+.card-p-lg {
+  padding: 2rem;
+}
+
+.card-interactive {
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  border-color: var(--accent);
+}
+
+.card-interactive:active {
+  transform: scale(0.99);
+}
+
+button.card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  box-sizing: border-box;
+}
