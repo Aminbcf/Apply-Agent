@@ -1,7 +1,6 @@
 .env
-Workflow.md
-docs/*
 node_modules/
+
 dist/
 target/
 data/*.db
