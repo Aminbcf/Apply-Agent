@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 
-client = TestClient(app)
+client = TestClient(app, base_url="https://testserver")
 
 @pytest.mark.unit
 def test_app_instantiation():

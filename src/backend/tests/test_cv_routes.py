@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from main import app
 from routers.cv import DOMAINS
 
-client = TestClient(app)
+client = TestClient(app, base_url="https://testserver")
 
 @pytest.fixture
 def mock_embedding_manager():
