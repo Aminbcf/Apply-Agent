@@ -1,6 +1,11 @@
 import { NavLink } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
 import { useThemeStore } from "../../stores/themeStore";
 import "./Sidebar.css";
+
+export type SidebarProps = Readonly<{
+  className?: string;
+}>;
 
 interface NavItem {
   label: string;
@@ -21,8 +26,9 @@ const navItems: NavItem[] = [
  * Renders the logo wordmark, primary nav links, and the theme toggle.
  */
 export function Sidebar() {
-  const theme = useThemeStore((s) => s.theme);
-  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const { theme, toggleTheme } = useThemeStore(
+    useShallow((s) => ({ theme: s.theme, toggleTheme: s.toggleTheme }))
+  );
 
   return (
     <aside className="sidebar" aria-label="Main navigation">

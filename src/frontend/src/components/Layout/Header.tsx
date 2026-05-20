@@ -1,10 +1,11 @@
+import { ReactNode } from "react";
 import "./Header.css";
 
-interface HeaderProps {
+export type HeaderProps = Readonly<{
   title: string;
   subtitle?: string;
-  actions?: React.ReactNode;
-}
+  actions?: ReactNode;
+}>;
 
 export function Header({ title, subtitle, actions }: HeaderProps) {
   return (

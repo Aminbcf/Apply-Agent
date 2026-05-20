@@ -23,7 +23,8 @@ def run_test():
                 print("TEST FAILED:", e)
                 return 2
             except Exception as e:
-                print("TEST ERROR:", e)
+                import logging
+                logging.error("TEST ERROR: %s", e, exc_info=True)
                 return 3
         else:
             print("No test function found")

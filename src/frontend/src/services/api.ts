@@ -40,7 +40,7 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const apiClient = {
   get: <T>(path: string) => requestJson<T>(path),
-  post: <T, B extends Record<string, unknown> | undefined = undefined>(path: string, body?: B) =>
+  post: <T, B = undefined>(path: string, body?: B) =>
     requestJson<T>(path, {
       method: "POST",
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -57,5 +57,31 @@ export type DashboardStats = {
   interview_sessions: number;
 };
 
+export type OnboardingStatus = {
+  status: "pending" | "completed";
+  steps_completed: number;
+};
+
+export type UserProfileData = {
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  career_goals: string | null;
+  experience: unknown[];
+  education: unknown[];
+  projects: unknown[];
+  skills: Record<string, unknown>;
+  certifications: unknown[];
+  languages: unknown[];
+  achievements: unknown[];
+};
+
 export const getDashboardStats = () => apiClient.get<DashboardStats>("/dashboard/stats");
 
+export const getOnboardingStatus = () => apiClient.get<OnboardingStatus>("/onboarding/status");
+
+export const getProfile = () => apiClient.get<UserProfileData>("/profile/");
+
+export const saveProfile = (profile: UserProfileData) =>
+  apiClient.post<UserProfileData, UserProfileData>("/profile/", profile);

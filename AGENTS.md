@@ -9,8 +9,9 @@ This file provides **clear guidance for the language model (LLM) agents** that o
 - The **primary location** for LLM‑driven operations is the project root directory (`<project_root>`).
 - Agents should **always start by loading** the following markdown resources:
   1. **`docs/rules.md`** – Contains the comprehensive coding guidelines, architecture principles, and the **Session Memory & Persistent Logs** section.
-  2. **`docs/memory.md`** – (if present) aggregates important insights across sessions. Agents must read this file at the beginning of each session to recall shared standards and reusable patterns.
-  3. **`logs/`** directory – Holds per‑session logs (`session_<timestamp>.md`). Agents may consult recent logs for context when resuming work.
+  2. **`docs/skills/coding-standards/SKILL.md`** – Enforces code quality, maintainability, formatting, and a strict test coverage minimum (>= 80%).
+  3. **`docs/memory.md`** – (if present) aggregates important insights across sessions. Agents must read this file at the beginning of each session to recall shared standards and reusable patterns.
+  4. **`logs/`** directory – Holds per‑session logs (`session_<timestamp>.md`). Agents may consult recent logs for context when resuming work.
 
 ## How Agents Should Use the Documentation
 

@@ -1,10 +1,12 @@
 import json
+import logging
 import os
 import shlex
 import subprocess  # nosec B404
 import shutil
 from typing import List, Dict, Any, Optional
 
+logger = logging.getLogger(__name__)
 
 def _escape_latex(text: str) -> str:
     replacements = {
@@ -50,7 +52,8 @@ def generate_cover_letter(job: Dict[str, Any], skills: Dict[str, List[str]], evi
         if os.path.exists(instr_path):
             with open(instr_path, "r", encoding="utf8") as fh:
                 system_prompt = fh.read()
-    except Exception:
+    except Exception as e:
+        logger.error("Failed to load cover letter instructions: %s", e)
         system_prompt = ""
 
     # Build compact JSON context to inject into the prompt

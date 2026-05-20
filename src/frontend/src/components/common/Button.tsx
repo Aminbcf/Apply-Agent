@@ -1,12 +1,14 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
 import "./Button.css";
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-  size?: "sm" | "md" | "lg";
-  icon?: string;
-  loading?: boolean;
-}
+export type ButtonProps = Readonly<
+  ButtonHTMLAttributes<HTMLButtonElement> & {
+    variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+    size?: "sm" | "md" | "lg";
+    icon?: string;
+    loading?: boolean;
+  }
+>;
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (

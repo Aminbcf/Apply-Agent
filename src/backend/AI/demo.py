@@ -194,9 +194,9 @@ def main():
         print("  3. Visit http://localhost:8000/docs for interactive API docs")
         
     except Exception as e:
-        print(f"\n❌ Error during demo: {e}")
-        import traceback
-        traceback.print_exc()
+        import logging
+        logging.basicConfig(level=logging.ERROR)
+        logging.error("Error during demo: %s", e, exc_info=True)
         return 1
     
     return 0

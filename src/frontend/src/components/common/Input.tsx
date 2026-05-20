@@ -1,18 +1,19 @@
 import { InputHTMLAttributes, forwardRef } from "react";
 import "./Input.css";
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export type InputProps = Readonly<InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   error?: string;
   icon?: string;
-}
+  containerClassName?: string;
+}>;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className = "", label, error, icon, id, ...props }, ref) => {
+  ({ className = "", label, error, icon, id, containerClassName = "", ...props }, ref) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
 
     return (
-      <div className={`input-wrapper ${className}`}>
+      <div className={`input-wrapper ${containerClassName}`}>
         {label && (
           <label htmlFor={inputId} className="input-label">
             {label}
@@ -23,7 +24,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`input-field ${icon ? "has-icon" : ""} ${error ? "has-error" : ""}`}
+            className={`input-field ${icon ? "has-icon" : ""} ${error ? "has-error" : ""} ${className}`.trim()}
             {...props}
           />
         </div>
