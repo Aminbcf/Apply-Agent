@@ -50,3 +50,12 @@ export const apiClient = {
 export type HealthResponse = {
   status: string;
 };
+
+export type DashboardStats = {
+  active_applications: number;
+  generated_documents: number;
+  interview_sessions: number;
+};
+
+export const getDashboardStats = () => apiClient.get<DashboardStats>("/dashboard/stats");
+

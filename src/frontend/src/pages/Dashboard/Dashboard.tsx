@@ -1,30 +1,42 @@
+import { useEffect, useState } from "react";
 import { Header } from "../../components/Layout/Header";
 import { Card } from "../../components/common/Card";
 import { Badge } from "../../components/common/Badge";
+import { getDashboardStats, DashboardStats } from "../../services/api";
 import "./Dashboard.css";
 
-const dashboardCards = [
-  {
-    title: "Onboarding",
-    value: "0 steps complete",
-    detail: "Upload a CV or enter your profile manually.",
-    icon: "bi-person-check",
-  },
-  {
-    title: "Applications",
-    value: "0 active",
-    detail: "Track jobs, drafts, and generated documents in one place.",
-    icon: "bi-briefcase",
-  },
-  {
-    title: "Interview prep",
-    value: "0 sessions",
-    detail: "Build contextual mock interviews from your career history.",
-    icon: "bi-chat-square-text",
-  },
-];
-
 export function Dashboard() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDashboardStats()
+      .then((data) => setStats(data))
+      .catch((err) => console.error("Failed to load dashboard stats", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const dashboardCards = [
+    {
+      title: "Onboarding",
+      value: "0 steps complete", // Will be linked later when onboarding is implemented
+      detail: "Upload a CV or enter your profile manually.",
+      icon: "bi-person-check",
+    },
+    {
+      title: "Applications",
+      value: loading ? "..." : `${stats?.active_applications ?? 0} active`,
+      detail: "Track jobs, drafts, and generated documents in one place.",
+      icon: "bi-briefcase",
+    },
+    {
+      title: "Interview prep",
+      value: loading ? "..." : `${stats?.interview_sessions ?? 0} sessions`,
+      detail: "Build contextual mock interviews from your career history.",
+      icon: "bi-chat-square-text",
+    },
+  ];
+
   return (
     <>
       <Header
