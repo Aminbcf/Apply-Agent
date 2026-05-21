@@ -174,8 +174,15 @@ async def test_onboarding_cv_upload_txt_updates_profile(client):
 async def test_onboarding_debug_endpoints(client):
     """Test onboarding debug endpoints and LLM context generation."""
     original_debug_mode = settings.debug_mode
-    settings.debug_mode = True
+    settings.debug_mode = False
     try:
+        # 0. When debug_mode is disabled, the endpoint should not exist.
+        response = await client.get("/onboarding/debug")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Not Found"
+
+        settings.debug_mode = True
+
         # 1. Access debug endpoint before profile exists should return 404
         response = await client.get("/onboarding/debug")
         assert response.status_code == 404

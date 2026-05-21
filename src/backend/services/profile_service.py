@@ -197,11 +197,6 @@ class ProfileService:
 
         return "\n".join(p.text for p in doc.paragraphs if p.text).strip()
 
-    def _parse_cv_to_patch(self, cv_text: str) -> ParsedCvProfilePatch:
-        parsed = parse_raw_cv(cv_text)
-
-        return self._build_patch_from_parsed_cv(parsed)
-
     def _build_patch_from_parsed_cv(
         self, parsed_raw_dict: dict[str, Any]
     ) -> ParsedCvProfilePatch:
