@@ -54,15 +54,18 @@ Status snapshot for the current workspace before continuing implementation.
 
 ### Phase 2 - Persistence and Context
 
-- [ ] Add SQLite persistence layer
-- [ ] Add user profile and onboarding backend services
-- [ ] Add onboarding pages and stores in the frontend
+- [x] Add SQLite persistence layer
+- [x] Add user profile and onboarding backend services
+- [x] Add onboarding pages and stores in the frontend
 
 ### Phase 3 - LLM and Embeddings
 
 - [ ] Add modular LLM interface layer
 - [ ] Add reusable embedding and RAG services
 - [ ] Refactor cover letter generation onto the new interface
+- [ ] Implement FastAPI `/llm/generate` endpoint and connect to frontend UI
+- [ ] Write unit tests for LLMAdapter and EmbeddingAdapter integration
+- [ ] Write unit tests for onboarding data persistence and front‑end update
 
 ### Phase 4 - Templates and PDF
 
