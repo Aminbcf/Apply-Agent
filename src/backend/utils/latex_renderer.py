@@ -15,7 +15,7 @@ Usage::
 from __future__ import annotations
 
 import logging
-import subprocess
+import subprocess  # nosec B404
 import uuid
 from pathlib import Path
 from typing import Literal

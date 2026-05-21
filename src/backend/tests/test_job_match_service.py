@@ -48,7 +48,7 @@ def _make_service(db=None):
     mock_cache.clear = MagicMock()
 
     mock_renderer = MagicMock()
-    fake_pdf = Path("/tmp/fake.pdf")
+    fake_pdf = Path("fake.pdf")
     mock_renderer.render.return_value = fake_pdf
 
     # SQLAlchemy AsyncSession: add() is sync, commit()/refresh() are async

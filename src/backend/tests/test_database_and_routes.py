@@ -10,12 +10,20 @@ from config import settings
 from database import Base, get_db
 from main import app
 from models.job_application import JobApplication
+from models.user_profile import UserProfile
 
 # Mark all tests in this file as async using anyio
 pytestmark = pytest.mark.anyio
 
+from sqlalchemy.pool import StaticPool
+
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+    echo=False,
+)
 test_session_factory = async_sessionmaker(
     test_engine, expire_on_commit=False, class_=AsyncSession
 )

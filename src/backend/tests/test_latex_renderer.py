@@ -5,7 +5,7 @@ All subprocess calls are mocked so pdflatex is never actually invoked.
 
 from __future__ import annotations
 
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 

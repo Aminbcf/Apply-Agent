@@ -211,10 +211,10 @@ async def regenerate_pdf(
     Returns 202 immediately; poll ``GET /jobs/{job_id}/status`` for completion.
     """
     # Verify job exists before enqueueing
-    await _get_job_or_404(job_id, db)
+    job = await _get_job_or_404(job_id, db)
 
     service = _make_service(db)
-    background_tasks.add_task(service.regenerate_pdf, job_id, doc_type)
+    background_tasks.add_task(service.regenerate_pdf, str(job.id), doc_type)
 
-    logger.info("Re-render queued for job %s doc_type=%s", job_id, doc_type)
-    return {"job_id": job_id, "doc_type": doc_type, "queued": True}
+    logger.info("Re-render queued for job %s", str(job.id))
+    return {"job_id": str(job.id), "doc_type": doc_type, "queued": True}
