@@ -178,7 +178,7 @@ class JobMatchService:
             job.cover_letter_pdf_path = str(cl_pdf)
 
         except LatexRenderError as exc:
-            logger.error("PDF render failed for job %s: %s", job_id, exc)
+            logger.exception("PDF render failed for job %s: %s", job_id, exc)
         except Exception as exc:  # noqa: BLE001
             logger.exception("Unexpected error in generate_documents for job %s: %s", job_id, exc)
         finally:
@@ -258,7 +258,7 @@ class JobMatchService:
             else:
                 job.cover_letter_pdf_path = str(pdf_path)
         except LatexRenderError as exc:
-            logger.error("Re-render failed for job %s doc_type=%s: %s", job_id, doc_type, exc)
+            logger.exception("Re-render failed for job %s doc_type=%s: %s", job_id, doc_type, exc)
         finally:
             job.processing = False
             await self.db.commit()

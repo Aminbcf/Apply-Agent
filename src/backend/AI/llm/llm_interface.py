@@ -29,8 +29,8 @@ class QwenAdapter(LLMAdapter):
     def __init__(self) -> None:
         model_dir = Path(__file__).parent / "final_lora_adapter"
         # Load tokenizer and model from the local directory.
-        self.tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)
-        self.model = AutoModelForCausalLM.from_pretrained(model_dir, device_map="auto", trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir, use_fast=True)  # nosec B615
+        self.model = AutoModelForCausalLM.from_pretrained(model_dir, device_map="auto", trust_remote_code=True)  # nosec B615
         # Use a text‑generation pipeline for simplicity.
         self.generator = pipeline("text-generation", model=self.model, tokenizer=self.tokenizer, torch_dtype=self.model.dtype)
 
@@ -64,7 +64,7 @@ def get_system_prompt(scenario: str) -> str:
 
 
 
-def get_related_documents(scenario: str) -> List[str]:
+def get_related_documents() -> List[str]:
     """Placeholder for retrieving documents relevant to the scenario.
 
     In a full implementation this would query the SQLite DB for CV entries, cover‑letter examples,
@@ -77,7 +77,7 @@ def build_prompt(scenario: str, user_query: str) -> str:
     """Compose the full prompt with system message, retrieved context, and user query.
     """
     system = get_system_prompt(scenario)
-    docs = get_related_documents(scenario)
+    docs = get_related_documents()
     context = "\n".join(docs)
     if context:
         return f"{system}\n\nContext:\n{context}\n\nUser: {user_query}"

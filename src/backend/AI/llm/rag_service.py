@@ -22,14 +22,6 @@ class RAGService:
         self.documents_path = Path(__file__).parent / ".." / ".." / "data" / "documents"
         self.documents_path.mkdir(parents=True, exist_ok=True)
 
-    def _retrieve_documents(self, query: str, top_k: int = 3) -> List[str]:
-        """Placeholder document retrieval.
-
-        Returns a list of strings representing document snippets.
-        """
-        # For now, just return empty list. Real implementation would perform vector search.
-        return []
-
     def generate(self, session_id: str, scenario: str, user_query: str) -> str:
         """Generate a response for a given session and scenario.
 
@@ -41,8 +33,7 @@ class RAGService:
         # Cache the user message
         self.cache.add_message(session_id, "user", user_query)
 
-        docs = self._retrieve_documents(user_query)
-        # Build prompt with docs (build_prompt currently ignores docs, but could be extended)
+        # Build prompt (build_prompt fetches docs internally if needed)
         prompt = build_prompt(scenario, user_query)
         response = self.llm.generate(prompt)
 

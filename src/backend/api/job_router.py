@@ -63,7 +63,7 @@ def _make_service(db: AsyncSession) -> JobMatchService:
 
 # ── Endpoints ─────────────────────────────────────────────────
 
-@router.post("/evaluate", response_model=JobEvaluationOut, status_code=202)
+@router.post("/evaluate", status_code=202)
 async def evaluate_job(
     payload: JobOfferIn,
     background_tasks: BackgroundTasks,
@@ -95,7 +95,7 @@ async def evaluate_job(
     return result
 
 
-@router.get("/{job_id}/status", response_model=JobStatusOut)
+@router.get("/{job_id}/status", responses={404: {"description": "Not found"}})
 async def get_job_status(job_id: str, db: DbDep) -> JobStatusOut:
     """Poll the processing state and PDF availability of a job evaluation."""
     job = await _get_job_or_404(job_id, db)
@@ -114,7 +114,7 @@ async def get_job_status(job_id: str, db: DbDep) -> JobStatusOut:
     )
 
 
-@router.get("/{job_id}/download")
+@router.get("/{job_id}/download", responses={404: {"description": "Not found"}})
 async def download_file(
     job_id: str,
     file_type: Annotated[
@@ -155,7 +155,7 @@ async def download_file(
     return {"latex": job.cover_letter_latex}
 
 
-@router.patch("/{job_id}/status")
+@router.patch("/{job_id}/status", responses={404: {"description": "Not found"}})
 async def update_workflow_status(
     job_id: str,
     payload: WorkflowStatusUpdate,
@@ -177,7 +177,7 @@ async def update_workflow_status(
     return {"job_id": str(job.id), "workflow_status": job.workflow_status}
 
 
-@router.patch("/{job_id}/latex")
+@router.patch("/{job_id}/latex", responses={404: {"description": "Not found"}})
 async def update_latex(
     job_id: str,
     payload: LatexUpdate,
@@ -198,7 +198,7 @@ async def update_latex(
     return {"job_id": str(job.id), "doc_type": payload.doc_type, "saved": True}
 
 
-@router.post("/{job_id}/regenerate", status_code=202)
+@router.post("/{job_id}/regenerate", status_code=202, responses={404: {"description": "Not found"}})
 async def regenerate_pdf(
     job_id: str,
     doc_type: Annotated[Literal["cv", "cover"], Body(embed=True)],

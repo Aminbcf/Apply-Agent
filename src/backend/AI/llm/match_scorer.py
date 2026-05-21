@@ -181,7 +181,7 @@ class MatchScorer:
         dot = sum(x * y for x, y in zip(a, b))
         norm_a = math.sqrt(sum(x * x for x in a))
         norm_b = math.sqrt(sum(y * y for y in b))
-        if norm_a == 0.0 or norm_b == 0.0:
+        if math.isclose(norm_a, 0.0) or math.isclose(norm_b, 0.0):
             return 0.0
         raw = dot / (norm_a * norm_b)
         # Clamp to [0, 1] – negative cosine means opposite direction, treat as 0

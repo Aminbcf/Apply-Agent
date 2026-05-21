@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from database import Base, get_db
@@ -24,7 +25,12 @@ pytestmark = pytest.mark.anyio
 
 # ── In-memory DB setup ────────────────────────────────────────
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
-test_engine = create_async_engine(TEST_DB_URL, echo=False)
+test_engine = create_async_engine(
+    TEST_DB_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+    echo=False,
+)
 test_session_factory = async_sessionmaker(
     test_engine, expire_on_commit=False, class_=AsyncSession
 )
@@ -32,6 +38,8 @@ test_session_factory = async_sessionmaker(
 
 @pytest.fixture(autouse=True)
 async def setup_test_db():
+    from models.user_profile import UserProfile  # Ensure UserProfile is registered
+    from models.job_application import JobApplication # Ensure JobApplication is registered
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -44,7 +52,11 @@ async def override_get_db():
         yield session
 
 
-app.dependency_overrides[get_db] = override_get_db
+@pytest.fixture(autouse=True)
+def override_dependency():
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -128,7 +140,7 @@ class TestEvaluateEndpoint:
             json={
                 "title": "Dev",
                 "company": "Corp",
-                "description": "Hi",   # min_length=10
+                "description": "Hi",
                 "session_id": "s1",
             },
         )

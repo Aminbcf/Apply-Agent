@@ -21,10 +21,10 @@ from schemas.job_schemas import JobEvaluationOut
 # ── Helpers ───────────────────────────────────────────────────
 
 def _make_dim_scores(**kwargs) -> DimensionScores:
-    defaults = dict(
-        job_match=80.0, skill_match=70.0,
-        education_match=100.0, experience_match=90.0, objective_match=60.0,
-    )
+    defaults = {
+        "job_match": 80.0, "skill_match": 70.0,
+        "education_match": 100.0, "experience_match": 90.0, "objective_match": 60.0,
+    }
     defaults.update(kwargs)
     return DimensionScores(**defaults)
 
@@ -83,7 +83,7 @@ class TestEvaluateJob:
                 )
 
         assert isinstance(result, JobEvaluationOut)
-        assert result.overall_score == 80.5
+        assert result.overall_score == pytest.approx(80.5)
         assert result.processing is True
         assert result.cv_pdf_url is None
 
@@ -198,7 +198,7 @@ class TestGenerateDocuments:
 class TestUpdateWorkflowStatus:
     @pytest.mark.asyncio
     async def test_status_updated_to_accepted(self) -> None:
-        service, _, _, _, _, mock_db = _make_service()
+        service, *_ = _make_service()
 
         fake_job = MagicMock()
         fake_job.id = str(uuid.uuid4())

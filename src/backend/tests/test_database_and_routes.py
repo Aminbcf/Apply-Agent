@@ -46,7 +46,11 @@ async def override_get_db():
 
 
 # Override the database dependency in the FastAPI application
-app.dependency_overrides[get_db] = override_get_db
+@pytest.fixture(autouse=True)
+def override_dependency():
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture

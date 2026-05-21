@@ -109,8 +109,8 @@ class TestPerfectMatch:
     def test_all_dimensions_high(self, scorer: MatchScorer) -> None:
         dims = scorer.score(_full_checklist(), _cv_context_perfect(), _perfect_embeddings())
         assert dims.skill_match >= 90.0
-        assert dims.education_match == 100.0
-        assert dims.experience_match == 100.0
+        assert dims.education_match == pytest.approx(100.0)
+        assert dims.experience_match == pytest.approx(100.0)
 
 
 # ── Zero overlap ──────────────────────────────────────────────
@@ -143,7 +143,7 @@ class TestDimensionIsolation:
         assert scorer._cosine(a, b) == pytest.approx(0.0)
 
     def test_cosine_empty_vector(self, scorer: MatchScorer) -> None:
-        assert scorer._cosine([], []) == 0.0
+        assert scorer._cosine([], []) == pytest.approx(0.0)
 
     def test_skill_overlap_full(self, scorer: MatchScorer) -> None:
         # All required + preferred matched
