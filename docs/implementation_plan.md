@@ -539,3 +539,91 @@ Dark Theme:
 Each phase will be documented in `docs/` as completed, and progress tracked in `task.md`.
 
 This implementation plan is also stored in `docs/implementation_plan.md` for reference.
+
+---
+
+### Phase 7: Job‑Match Scenario & LaTeX Document Generation
+
+Extends the RAG‑enabled LLM layer with a fourth scenario that evaluates a job offer against the candidate's stored CV/cover‑letter context, produces a **multi‑dimensional match report**, generates LaTeX PDFs, and persists all artefacts in SQLite.
+
+#### Design Decisions (Confirmed)
+
+| Decision | Choice |
+|---|---|
+| Scoring algorithm | Embedding-assisted **checklist** – per-dimension cosine similarity + rule-based weight aggregation |
+| Score dimensions | `job_match`, `skill_match`, `education_match`, `experience_match`, `objective_match` |
+| LaTeX templates | Create minimal `.tex` templates from scratch |
+| PDF re-render trigger | "Re-generate" button after user edits LaTeX source |
+| Progress reporting | Simple boolean `processing` flag + client polling (`GET /jobs/{id}/status` every 2 s) |
+| PDF editing | Lightweight: user edits raw LaTeX source in textarea; re-renders on demand |
+| DB approach | Extend existing `job_applications` table with new columns |
+| Endpoint naming | `POST /jobs/evaluate`, `GET /jobs/{job_id}/download` |
+
+#### Match-Scoring Architecture
+
+```
+Job Description
+    │
+    ├─► ChecklistExtractor (rule-based NLP + optional LLM)
+    │        └─► JobChecklist { required_skills, preferred_skills,
+    │                           education_level, education_field,
+    │                           min_experience_years, objectives }
+    │
+    ├─► embed(job_description)   ← SentenceTransformer
+    │
+    └─► compare against CV sections (embedded + parsed)
+              │
+              ▼
+         MatchScorer {
+           job_match        (overall semantic cosine)     weight: 0.20
+           skill_match      (checklist ∩ candidate)       weight: 0.30
+           education_match  (degree level + field)        weight: 0.15
+           experience_match (years + domain overlap)      weight: 0.20
+           objective_match  (career goal alignment)       weight: 0.15
+         }
+              └─► overall_score = Σ (dimension × weight)  →  0–100 %
+```
+
+#### Proposed Changes
+
+##### [MODIFY] [job_application.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/models/job_application.py)
+Add columns: `workflow_status` (pending/accepted/rejected), `cv_latex`, `cover_letter_latex`, `cv_pdf_path`, `cover_letter_pdf_path`, `processing` (bool), `dimension_scores` (JSON).
+
+##### [NEW] [job_schemas.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/schemas/job_schemas.py)
+Pydantic schemas: `JobOfferIn`, `DimensionScores`, `JobEvaluationOut`.
+
+##### [NEW] [checklist_extractor.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/AI/llm/checklist_extractor.py)
+Rule-based + LLM-assisted extraction of `JobChecklist` from a job description.
+
+##### [NEW] [match_scorer.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/AI/llm/match_scorer.py)
+Pure deterministic scorer: `score()`, `_cosine()`, `_skill_overlap()`, `_education_score()`, `_experience_score()`, `_objective_score()`, `overall()`.
+
+##### [NEW] [job_match_service.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/AI/llm/job_match_service.py)
+Async orchestrator: `evaluate_job()` → extract → embed → score → persist → enqueue PDF generation. `generate_documents()` background task. `update_workflow_status()`.
+
+##### [MODIFY] [rag_service.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/AI/llm/rag_service.py)
+Add `evaluate_job(job_data, session_id)` delegator method (all existing methods untouched).
+
+##### [NEW] [latex_renderer.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/utils/latex_renderer.py)
+`LatexRenderer.render(latex_source, job_id, doc_type) -> Path`. Runs `pdflatex` via subprocess with timeout. Raises `LatexRenderError` on failure.
+
+##### [NEW] latex_templates/cv_template.tex + cover_letter_template.tex
+Minimal professional LaTeX templates with placeholder macros.
+
+##### [NEW] [job_router.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/api/job_router.py)
+6 endpoints: `POST /jobs/evaluate`, `GET /{id}/status`, `GET /{id}/download`, `PATCH /{id}/status`, `PATCH /{id}/latex`, `POST /{id}/regenerate`.
+
+##### [MODIFY] [main.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/main.py)
+Register `job_router`.
+
+##### [MODIFY] [config.py](file:///c:/Users/Amine/Desktop/Apply/Apply-Agent/src/backend/config.py)
+Add `latex_output_dir`, `max_job_history`, `pdflatex_timeout_seconds`.
+
+#### Tests (Phase 7 – ≥ 90 % coverage target)
+
+- `test_checklist_extractor.py` – happy-path, empty input, special characters
+- `test_match_scorer.py` – perfect match, zero overlap, per-dimension, weight-sum regression
+- `test_job_match_service.py` – mock embeddings + LLM + DB; assert score persistence, background task, status transitions
+- `test_latex_renderer.py` – mock subprocess success/failure/timeout
+- `test_job_router.py` – all 6 endpoints, success + error paths
+
