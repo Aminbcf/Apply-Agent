@@ -47,8 +47,6 @@ class ProfileService:
             languages=profile.languages or [],
             achievements=profile.achievements or [],
             career_goals=profile.career_goals,
-            raw_cv_text=profile.raw_cv_text,
-            parsed_cv_json=profile.parsed_cv_json,
         )
 
     async def upsert_profile(
@@ -74,15 +72,7 @@ class ProfileService:
         text = await self._extract_text_from_upload(uploaded_file)
         parsed_raw_dict = parse_raw_cv(text)
 
-        experience = parsed_raw_dict.get("experience") or []
-        education = parsed_raw_dict.get("education") or []
-        skills_list = parsed_raw_dict.get("skills") or []
-        skills: dict[str, Any] = (
-            {"general": skills_list} if skills_list else {}
-        )
-        patch = ParsedCvProfilePatch(
-            experience=experience, education=education, skills=skills
-        )
+        patch = self._build_patch_from_parsed_cv(parsed_raw_dict)
 
         existing_profile = await self.get_profile(db)
         if not existing_profile:
@@ -116,24 +106,6 @@ class ProfileService:
         profile.languages = data.languages
         profile.achievements = data.achievements
         profile.career_goals = data.career_goals
-
-        profile.raw_cv_text = data.raw_cv_text
-        profile.parsed_cv_json = data.parsed_cv_json
-
-        # Explicitly flag JSON columns as modified for SQLite nested updates
-        from sqlalchemy.orm.attributes import flag_modified
-        json_fields = [
-            "experience",
-            "education",
-            "projects",
-            "skills",
-            "certifications",
-            "languages",
-            "achievements",
-            "parsed_cv_json",
-        ]
-        for field in json_fields:
-            flag_modified(profile, field)
 
     async def _create_version(
         self, db: AsyncSession, profile: UserProfile, data: ProfileSchema
@@ -228,13 +200,17 @@ class ProfileService:
     def _parse_cv_to_patch(self, cv_text: str) -> ParsedCvProfilePatch:
         parsed = parse_raw_cv(cv_text)
 
-        experience = parsed.get("experience") or []
-        education = parsed.get("education") or []
-        skills_list = parsed.get("skills") or []
+        return self._build_patch_from_parsed_cv(parsed)
+
+    def _build_patch_from_parsed_cv(
+        self, parsed_raw_dict: dict[str, Any]
+    ) -> ParsedCvProfilePatch:
+        experience = parsed_raw_dict.get("experience") or []
+        education = parsed_raw_dict.get("education") or []
+        skills_list = parsed_raw_dict.get("skills") or []
         skills: dict[str, Any] = (
             {"general": skills_list} if skills_list else {}
         )
-
         return ParsedCvProfilePatch(
             experience=experience, education=education, skills=skills
         )

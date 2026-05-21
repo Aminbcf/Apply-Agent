@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config import settings
 from database import get_db
 from schemas.profile import (
     OnboardingStatusSchema,
@@ -56,6 +57,9 @@ async def get_onboarding_debug(
     db: Annotated[AsyncSession, Depends(get_db)]
 ) -> OnboardingDebugSchema:
     """Retrieve raw CV details and compose context for LLM prompt."""
+    if not settings.debug_mode:
+        raise HTTPException(status_code=404, detail="Not Found")
+
     profile = await profile_service.get_profile(db)
     if not profile:
         raise HTTPException(
@@ -109,9 +113,7 @@ async def get_onboarding_debug(
             "company": "Target Company",
             "location": "Remote",
         },
-        "constraints": {
-            "max_paragraphs": 3
-        }
+        "constraints": {"max_paragraphs": 3},
     }
 
     return OnboardingDebugSchema(

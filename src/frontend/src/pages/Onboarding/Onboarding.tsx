@@ -112,6 +112,7 @@ export function Onboarding() {
 
     setCvUploading(true);
     setMessage(null);
+
     try {
       const updated = await uploadOnboardingCv(file);
       setProfile({
@@ -124,14 +125,16 @@ export function Onboarding() {
         career_goals: updated.career_goals ?? "",
       });
       setMessage({ type: "success", text: "CV uploaded and parsed. Profile updated." });
-      // Dynamically fetch and update debug data since a new CV was parsed
-      const data = await getOnboardingDebug();
-      setDebugData(data);
     } catch (err) {
       console.error("Failed to upload CV", err);
       setMessage({ type: "error", text: "Failed to upload CV. Please try again." });
+      return;
     } finally {
       setCvUploading(false);
+    }
+
+    if (debugEnabled) {
+      await refreshDebug();
     }
   };
 
@@ -317,13 +320,12 @@ export function Onboarding() {
                 
                 <hr className="divider" />
                 
-                <div className="debug-tabs" role="tablist">
+                <div className="debug-tabs">
                   <button
                     type="button"
                     className={`debug-tab ${activeTab === "raw" ? "active" : ""}`}
                     onClick={() => setActiveTab("raw")}
-                    role="tab"
-                    aria-selected={activeTab === "raw"}
+                    aria-pressed={activeTab === "raw"}
                   >
                     <i className="bi bi-file-earmark-text" /> Raw CV Text
                   </button>
@@ -331,8 +333,7 @@ export function Onboarding() {
                     type="button"
                     className={`debug-tab ${activeTab === "parsed" ? "active" : ""}`}
                     onClick={() => setActiveTab("parsed")}
-                    role="tab"
-                    aria-selected={activeTab === "parsed"}
+                    aria-pressed={activeTab === "parsed"}
                   >
                     <i className="bi bi-diagram-3" /> Parser Interpretation
                   </button>
@@ -340,8 +341,7 @@ export function Onboarding() {
                     type="button"
                     className={`debug-tab ${activeTab === "context" ? "active" : ""}`}
                     onClick={() => setActiveTab("context")}
-                    role="tab"
-                    aria-selected={activeTab === "context"}
+                    aria-pressed={activeTab === "context"}
                   >
                     <i className="bi bi-cpu" /> LLM Prompt Context
                   </button>
