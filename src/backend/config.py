@@ -26,9 +26,16 @@ class Settings(BaseSettings):
             "tauri://localhost",
         ]
     )
+    cache_size: int = 128
 
     cv_upload_max_bytes: int = 5 * 1024 * 1024
     debug_mode: bool = False
+
+    # Phase 7 – Job‑match & LaTeX PDF generation
+    latex_output_dir: Path = Field(default_factory=lambda: BASE_DIR.parent / "data" / "latex")
+    max_job_history: int = 100
+    pdflatex_timeout_seconds: int = 60
+
 
     @property
     def database_url(self) -> str:

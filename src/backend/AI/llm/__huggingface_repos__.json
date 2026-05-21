@@ -1,0 +1,37 @@
+{
+    "repos": [
+        {
+            "repoId": "Qwen/Qwen2.5-1.5B-Instruct",
+            "repoType": "model",
+            "commitHash": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+            "filePaths": [
+                "config.json",
+                "model.safetensors",
+                "vocab.json",
+                "generation_config.json",
+                "tokenizer.json",
+                "tokenizer_config.json",
+                "merges.txt"
+            ]
+        },
+        {
+            "repoId": "sandeeppanem/resume-json-extraction-5k",
+            "repoType": "dataset",
+            "commitHash": "d40b68e4e18108d2a54c8bf075e016f708f36b62",
+            "filePaths": [
+                "README.md",
+                "data/train-00000-of-00001.parquet"
+            ]
+        },
+        {
+            "repoId": "dhruvvaidh/cover-letter-dataset-llama3",
+            "repoType": "dataset",
+            "commitHash": "b549767829b8af0ce27c15b186047961a381bb1d",
+            "filePaths": [
+                "data/train-00000-of-00001.parquet",
+                "README.md",
+                "data/test-00000-of-00001.parquet"
+            ]
+        }
+    ]
+}

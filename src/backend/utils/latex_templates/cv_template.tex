@@ -1,0 +1,97 @@
+% ============================================================
+%  Apply-Agent – Professional CV Template
+%  Placeholders are replaced by the LLM / JobMatchService
+%  before compilation.  All macros start with \APPLYAGENT.
+% ============================================================
+\documentclass[10pt,a4paper]{article}
+
+% ── Packages ─────────────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=1.8cm]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{parskip}
+
+% ── Colours ──────────────────────────────────────────────────
+\definecolor{accent}{HTML}{1D3557}
+\definecolor{light}{HTML}{457B9D}
+
+% ── Section formatting ────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\color{accent}}{}{0em}{}[\titlerule]
+\titlespacing{\section}{0pt}{8pt}{4pt}
+
+% ── Helper macros ─────────────────────────────────────────────
+\newcommand{\cvitem}[3]{%   {dates}{title/company}{description}
+  \noindent\textbf{#2}\hfill\textit{\small #1}\\
+  \small #3\vspace{4pt}
+}
+
+\newcommand{\cvskills}[1]{\small #1}
+
+% ─────────────────────────────────────────────────────────────
+\begin{document}
+\pagestyle{empty}
+
+% ── Header ───────────────────────────────────────────────────
+\begin{center}
+  {\LARGE\bfseries\color{accent} CANDIDATE\_FULL\_NAME}\\[4pt]
+  \small
+  CANDIDATE\_EMAIL\ $\cdot$\ CANDIDATE\_PHONE\ $\cdot$\ CANDIDATE\_LOCATION\\
+  \href{CANDIDATE\_LINKEDIN}{LinkedIn}\ $\cdot$\ \href{CANDIDATE\_GITHUB}{GitHub}
+\end{center}
+
+\vspace{6pt}
+
+% ── Professional Summary ──────────────────────────────────────
+\section{Professional Summary}
+CANDIDATE\_SUMMARY
+
+% ── Work Experience ───────────────────────────────────────────
+\section{Work Experience}
+
+% BEGIN EXPERIENCE BLOCK (repeat this block for each role)
+\cvitem{ROLE\_START\_DATE -- ROLE\_END\_DATE}
+       {ROLE\_TITLE, COMPANY\_NAME}
+       {ROLE\_DESCRIPTION}
+% END EXPERIENCE BLOCK
+
+% ── Education ────────────────────────────────────────────────
+\section{Education}
+
+% BEGIN EDUCATION BLOCK
+\cvitem{EDU\_START\_DATE -- EDU\_END\_DATE}
+       {EDU\_DEGREE, EDU\_INSTITUTION}
+       {EDU\_FIELD $\cdot$ GPA: EDU\_GPA}
+% END EDUCATION BLOCK
+
+% ── Skills ────────────────────────────────────────────────────
+\section{Skills}
+\cvskills{SKILLS\_LIST}
+
+% ── Projects ─────────────────────────────────────────────────
+\section{Projects}
+
+% BEGIN PROJECT BLOCK
+\cvitem{PROJ\_DATE}
+       {PROJ\_TITLE}
+       {PROJ\_DESCRIPTION}
+% END PROJECT BLOCK
+
+% ── Certifications ────────────────────────────────────────────
+\section{Certifications}
+\begin{itemize}[leftmargin=*,nosep]
+  \item CERTIFICATION\_LIST
+\end{itemize}
+
+% ── Languages ────────────────────────────────────────────────
+\section{Languages}
+LANGUAGES\_LIST
+
+\end{document}
