@@ -1,4 +1,4 @@
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useRef, useState, FormEvent } from "react";
 import { Header } from "../../components/Layout/Header";
 import { Card } from "../../components/common/Card";
 import { Input } from "../../components/common/Input";
@@ -34,6 +34,43 @@ export function Onboarding() {
   const [debugData, setDebugData] = useState<OnboardingDebugData | null>(null);
   const [debugLoading, setDebugLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"raw" | "parsed" | "context">("raw");
+
+  const rawTabRef = useRef<HTMLButtonElement | null>(null);
+  const parsedTabRef = useRef<HTMLButtonElement | null>(null);
+  const contextTabRef = useRef<HTMLButtonElement | null>(null);
+
+  const focusTab = (tab: "raw" | "parsed" | "context") => {
+    if (tab === "raw") rawTabRef.current?.focus();
+    if (tab === "parsed") parsedTabRef.current?.focus();
+    if (tab === "context") contextTabRef.current?.focus();
+  };
+
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const order: Array<"raw" | "parsed" | "context"> = [
+      "raw",
+      "parsed",
+      "context",
+    ];
+
+    const currentIndex = order.indexOf(activeTab);
+    if (currentIndex < 0) return;
+
+    const moveTo = (nextTab: "raw" | "parsed" | "context") => {
+      e.preventDefault();
+      setActiveTab(nextTab);
+      queueMicrotask(() => focusTab(nextTab));
+    };
+
+    if (e.key === "ArrowRight") {
+      moveTo(order[(currentIndex + 1) % order.length]);
+    } else if (e.key === "ArrowLeft") {
+      moveTo(order[(currentIndex - 1 + order.length) % order.length]);
+    } else if (e.key === "Home") {
+      moveTo(order[0]);
+    } else if (e.key === "End") {
+      moveTo(order[order.length - 1]);
+    }
+  };
 
   useEffect(() => {
     getProfile()
@@ -112,6 +149,7 @@ export function Onboarding() {
 
     setCvUploading(true);
     setMessage(null);
+
     try {
       const updated = await uploadOnboardingCv(file);
       setProfile({
@@ -124,14 +162,16 @@ export function Onboarding() {
         career_goals: updated.career_goals ?? "",
       });
       setMessage({ type: "success", text: "CV uploaded and parsed. Profile updated." });
-      // Dynamically fetch and update debug data since a new CV was parsed
-      const data = await getOnboardingDebug();
-      setDebugData(data);
     } catch (err) {
       console.error("Failed to upload CV", err);
       setMessage({ type: "error", text: "Failed to upload CV. Please try again." });
+      return;
     } finally {
       setCvUploading(false);
+    }
+
+    if (debugEnabled) {
+      await refreshDebug();
     }
   };
 
@@ -317,13 +357,22 @@ export function Onboarding() {
                 
                 <hr className="divider" />
                 
-                <div className="debug-tabs" role="tablist">
+                <div
+                  className="debug-tabs"
+                  role="tablist"
+                  aria-label="Debug telemetry views"
+                >
                   <button
                     type="button"
                     className={`debug-tab ${activeTab === "raw" ? "active" : ""}`}
                     onClick={() => setActiveTab("raw")}
+                    id="onboarding-debug-tab-raw"
                     role="tab"
                     aria-selected={activeTab === "raw"}
+                    aria-controls="onboarding-debug-panel-raw"
+                    tabIndex={activeTab === "raw" ? 0 : -1}
+                    onKeyDown={handleTabKeyDown}
+                    ref={rawTabRef}
                   >
                     <i className="bi bi-file-earmark-text" /> Raw CV Text
                   </button>
@@ -331,8 +380,13 @@ export function Onboarding() {
                     type="button"
                     className={`debug-tab ${activeTab === "parsed" ? "active" : ""}`}
                     onClick={() => setActiveTab("parsed")}
+                    id="onboarding-debug-tab-parsed"
                     role="tab"
                     aria-selected={activeTab === "parsed"}
+                    aria-controls="onboarding-debug-panel-parsed"
+                    tabIndex={activeTab === "parsed" ? 0 : -1}
+                    onKeyDown={handleTabKeyDown}
+                    ref={parsedTabRef}
                   >
                     <i className="bi bi-diagram-3" /> Parser Interpretation
                   </button>
@@ -340,15 +394,26 @@ export function Onboarding() {
                     type="button"
                     className={`debug-tab ${activeTab === "context" ? "active" : ""}`}
                     onClick={() => setActiveTab("context")}
+                    id="onboarding-debug-tab-context"
                     role="tab"
                     aria-selected={activeTab === "context"}
+                    aria-controls="onboarding-debug-panel-context"
+                    tabIndex={activeTab === "context" ? 0 : -1}
+                    onKeyDown={handleTabKeyDown}
+                    ref={contextTabRef}
                   >
                     <i className="bi bi-cpu" /> LLM Prompt Context
                   </button>
                 </div>
 
                 <div className="debug-tab-content">
-                  {activeTab === "raw" && (
+                  <div
+                    id="onboarding-debug-panel-raw"
+                    role="tabpanel"
+                    aria-labelledby="onboarding-debug-tab-raw"
+                    hidden={activeTab !== "raw"}
+                    tabIndex={0}
+                  >
                     <div className="debug-code-container">
                       <div className="debug-code-header">
                         <span>raw_cv_text.txt</span>
@@ -364,9 +429,15 @@ export function Onboarding() {
                         {debugData.raw_cv_text ? debugData.raw_cv_text : "No raw CV text parsed. Please upload a CV first in Step 2."}
                       </pre>
                     </div>
-                  )}
+                  </div>
 
-                  {activeTab === "parsed" && (
+                  <div
+                    id="onboarding-debug-panel-parsed"
+                    role="tabpanel"
+                    aria-labelledby="onboarding-debug-tab-parsed"
+                    hidden={activeTab !== "parsed"}
+                    tabIndex={0}
+                  >
                     <div className="debug-code-container">
                       <div className="debug-code-header">
                         <span>parsed_cv_json.json</span>
@@ -382,9 +453,15 @@ export function Onboarding() {
                         {debugData.parsed_cv_json ? JSON.stringify(debugData.parsed_cv_json, null, 2) : "No parsed CV telemetry. Please upload a CV first in Step 2."}
                       </pre>
                     </div>
-                  )}
+                  </div>
 
-                  {activeTab === "context" && (
+                  <div
+                    id="onboarding-debug-panel-context"
+                    role="tabpanel"
+                    aria-labelledby="onboarding-debug-tab-context"
+                    hidden={activeTab !== "context"}
+                    tabIndex={0}
+                  >
                     <div className="debug-code-container">
                       <div className="debug-code-header">
                         <span>llm_context_payload.json</span>
@@ -400,7 +477,7 @@ export function Onboarding() {
                         {debugData.llm_context ? JSON.stringify(debugData.llm_context, null, 2) : "No LLM context structured. Complete onboarding first."}
                       </pre>
                     </div>
-                  )}
+                  </div>
                 </div>
               </Card>
             )}

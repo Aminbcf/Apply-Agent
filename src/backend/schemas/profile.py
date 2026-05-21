@@ -23,9 +23,6 @@ class ProfileSchema(BaseModel):
 
     career_goals: str | None = None
 
-    raw_cv_text: str | None = None
-    parsed_cv_json: dict[str, Any] | None = None
-
 
 class OnboardingStatusSchema(BaseModel):
     """Pydantic schema for Onboarding Status."""

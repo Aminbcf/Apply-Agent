@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     )
 
     cv_upload_max_bytes: int = 5 * 1024 * 1024
+    debug_mode: bool = False
 
     @property
     def database_url(self) -> str:

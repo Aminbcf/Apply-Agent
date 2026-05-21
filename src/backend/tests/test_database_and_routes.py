@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from config import settings
 from database import Base, get_db
 from main import app
 from models.job_application import JobApplication
@@ -172,50 +173,59 @@ async def test_onboarding_cv_upload_txt_updates_profile(client):
 
 async def test_onboarding_debug_endpoints(client):
     """Test onboarding debug endpoints and LLM context generation."""
-    # 1. Access debug endpoint before profile exists should return 404
-    response = await client.get("/onboarding/debug")
-    assert response.status_code == 404
-    expected_err = "No profile found. Please complete onboarding first."
-    assert response.json()["detail"] == expected_err
+    original_debug_mode = settings.debug_mode
+    settings.debug_mode = False
+    try:
+        # 0. When debug_mode is disabled, the endpoint should not exist.
+        response = await client.get("/onboarding/debug")
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Not Found"
 
-    # 2. Upload a CV to create a profile and record telemetry
-    cv_text = (
-        "Summary\n"
-        "Experienced engineer.\n\n"
-        "Experience\n"
-        "Software Engineer\n"
-        "Acme Corp\n"
-        "City, State\n"
-        "Did stuff\n\n"
-        "Skills\n"
-        "Python, TypeScript, FastAPI\n"
-    )
+        settings.debug_mode = True
 
-    files = {
-        "file": ("cv.txt", cv_text.encode("utf-8"), "text/plain"),
-    }
-    response = await client.post("/onboarding/cv", files=files)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["raw_cv_text"] == cv_text
-    assert data["parsed_cv_json"] is not None
+        # 1. Access debug endpoint before profile exists should return 404
+        response = await client.get("/onboarding/debug")
+        assert response.status_code == 404
+        expected_err = "No profile found. Please complete onboarding first."
+        assert response.json()["detail"] == expected_err
 
-    # 3. Access debug endpoint and assert structure
-    response = await client.get("/onboarding/debug")
-    assert response.status_code == 200
-    debug_data = response.json()
+        # 2. Upload a CV to create a profile and record telemetry
+        cv_text = (
+            "Summary\n"
+            "Experienced engineer.\n\n"
+            "Experience\n"
+            "Software Engineer\n"
+            "Acme Corp\n"
+            "City, State\n"
+            "Did stuff\n\n"
+            "Skills\n"
+            "Python, TypeScript, FastAPI\n"
+        )
 
-    assert debug_data["raw_cv_text"] == cv_text
-    assert debug_data["parsed_cv_json"] is not None
-    assert debug_data["llm_context"] is not None
+        files = {
+            "file": ("cv.txt", cv_text.encode("utf-8"), "text/plain"),
+        }
+        response = await client.post("/onboarding/cv", files=files)
+        assert response.status_code == 200
 
-    # 4. Assert llm_context has correct structure
-    llm_context = debug_data["llm_context"]
-    assert "candidate" in llm_context
-    assert "skills" in llm_context
-    assert "evidence" in llm_context
-    assert "job" in llm_context
-    assert "constraints" in llm_context
+        # 3. Access debug endpoint and assert structure
+        response = await client.get("/onboarding/debug")
+        assert response.status_code == 200
+        debug_data = response.json()
 
-    assert llm_context["skills"]["req_skills"] != []
-    assert llm_context["evidence"] != []
+        assert debug_data["raw_cv_text"] == cv_text
+        assert debug_data["parsed_cv_json"] is not None
+        assert debug_data["llm_context"] is not None
+
+        # 4. Assert llm_context has correct structure
+        llm_context = debug_data["llm_context"]
+        assert "candidate" in llm_context
+        assert "skills" in llm_context
+        assert "evidence" in llm_context
+        assert "job" in llm_context
+        assert "constraints" in llm_context
+
+        assert llm_context["skills"]["req_skills"] != []
+        assert llm_context["evidence"] != []
+    finally:
+        settings.debug_mode = original_debug_mode
