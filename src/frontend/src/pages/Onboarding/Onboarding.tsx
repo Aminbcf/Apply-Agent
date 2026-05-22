@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "../../components/Layout/Header";
 import { Card } from "../../components/common/Card";
 import { Input } from "../../components/common/Input";
@@ -125,6 +126,8 @@ export function Onboarding() {
     }
   };
 
+  const navigate = useNavigate();
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -136,6 +139,9 @@ export function Onboarding() {
       if (debugEnabled) {
         await refreshDebug();
       }
+      setTimeout(() => {
+        navigate("/applications");
+      }, 1500);
     } catch (err) {
       console.error("Failed to save profile", err);
       setMessage({ type: "error", text: "Failed to save profile. Please try again." });

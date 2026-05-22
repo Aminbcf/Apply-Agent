@@ -126,7 +126,7 @@ class ProfileService:
             uploaded_file, max_bytes=settings.cv_upload_max_bytes
         )
 
-        if suffix == ".txt":
+        if suffix in [".txt", ".md"]:
             return content.decode("utf-8", errors="replace")
         if suffix == ".pdf":
             return self._extract_pdf_text(content)
@@ -134,7 +134,7 @@ class ProfileService:
             return self._extract_docx_text(content)
 
         raise ValueError(
-            "Unsupported file type. Please upload a PDF, DOCX, or TXT CV."
+            "Unsupported file type. Please upload a PDF, DOCX, TXT, or MD CV."
         )
 
     async def _read_upload_with_limit(

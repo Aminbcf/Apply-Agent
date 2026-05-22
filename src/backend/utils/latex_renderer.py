@@ -15,6 +15,7 @@ Usage::
 from __future__ import annotations
 
 import logging
+import re
 import subprocess  # nosec B404
 import uuid
 from pathlib import Path
@@ -23,6 +24,8 @@ from typing import Literal
 logger = logging.getLogger(__name__)
 
 DocType = Literal["cv", "cover"]
+
+TEMPLATE_DIR = Path(__file__).parent / "latex_templates"
 
 
 class LatexRenderError(RuntimeError):
@@ -92,6 +95,53 @@ class LatexRenderer:
         logger.info("PDF generated: %s", pdf_path)
         return pdf_path
 
+    def render_from_markdown(
+        self,
+        markdown_text: str,
+        template_type: DocType,
+        job_id: str,
+        user_info: dict | None = None,
+    ) -> Path:
+        """Convert markdown text to LaTeX via a template and compile to PDF.
+
+        Parameters
+        ----------
+        markdown_text:
+            User-edited document in markdown format.
+        template_type:
+            ``"cv"`` or ``"cover"`` — determines which LaTeX template to use.
+        job_id:
+            UUID string for the job application.
+        user_info:
+            Optional dict with keys ``name``, ``email``, ``phone``, ``location``.
+
+        Returns
+        -------
+        Path
+            Absolute path to the generated PDF file.
+        """
+        user_info = user_info or {}
+
+        # Load the template
+        template_name = "cv_template.tex" if template_type == "cv" else "cover_letter_template.tex"
+        template_path = TEMPLATE_DIR / template_name
+        if not template_path.exists():
+            raise LatexRenderError(f"Template not found: {template_path}")
+
+        template = template_path.read_text(encoding="utf-8")
+
+        # Convert markdown to LaTeX body
+        latex_body = self._markdown_to_latex(markdown_text)
+
+        # Inject placeholders
+        latex_source = template.replace("{{CONTENT}}", latex_body)
+        latex_source = latex_source.replace("{{CANDIDATE_NAME}}", _escape_latex(user_info.get("name", "")))
+        latex_source = latex_source.replace("{{CANDIDATE_EMAIL}}", _escape_latex(user_info.get("email", "")))
+        latex_source = latex_source.replace("{{CANDIDATE_PHONE}}", _escape_latex(user_info.get("phone", "")))
+        latex_source = latex_source.replace("{{CANDIDATE_LOCATION}}", _escape_latex(user_info.get("location", "")))
+
+        return self.render(latex_source, job_id, template_type)
+
     # ── Internal helpers ──────────────────────────────────────
 
     def _job_dir(self, job_id: str) -> Path:
@@ -147,3 +197,101 @@ class LatexRenderer:
                 f"pdflatex exited with code {result.returncode}.\n"
                 f"--- log tail ---\n{log_tail}"
             )
+
+    @staticmethod
+    def _markdown_to_latex(md_text: str) -> str:
+        """Convert basic markdown to LaTeX body content.
+
+        Supports: headings (## → \\section), bold, italic, bullet lists,
+        numbered lists, and paragraphs.
+        """
+        lines = md_text.split("\n")
+        result = []
+        in_itemize = False
+        in_enumerate = False
+
+        for line in lines:
+            stripped = line.strip()
+
+            # Close open lists if line is not a list item
+            if not stripped.startswith("- ") and not stripped.startswith("* ") and in_itemize:
+                result.append("\\end{itemize}")
+                in_itemize = False
+            if not re.match(r"^\d+\.\s", stripped) and in_enumerate:
+                result.append("\\end{enumerate}")
+                in_enumerate = False
+
+            # Headings
+            if stripped.startswith("### "):
+                result.append(f"\\subsection*{{{_escape_latex(stripped[4:])}}}")
+            elif stripped.startswith("## "):
+                result.append(f"\\section*{{{_escape_latex(stripped[3:])}}}")
+            elif stripped.startswith("# "):
+                result.append(f"\\section*{{{_escape_latex(stripped[2:])}}}")
+            # Bullet lists
+            elif stripped.startswith("- ") or stripped.startswith("* "):
+                if not in_itemize:
+                    result.append("\\begin{itemize}[nosep]")
+                    in_itemize = True
+                item_text = _escape_latex(stripped[2:])
+                item_text = _apply_inline_formatting(item_text)
+                result.append(f"  \\item {item_text}")
+            # Numbered lists
+            elif re.match(r"^\d+\.\s", stripped):
+                if not in_enumerate:
+                    result.append("\\begin{enumerate}[nosep]")
+                    in_enumerate = True
+                item_text = re.sub(r"^\d+\.\s", "", stripped)
+                item_text = _escape_latex(item_text)
+                item_text = _apply_inline_formatting(item_text)
+                result.append(f"  \\item {item_text}")
+            # Empty line = paragraph break
+            elif stripped == "":
+                result.append("")
+            # Normal paragraph
+            else:
+                escaped = _escape_latex(stripped)
+                escaped = _apply_inline_formatting(escaped)
+                result.append(escaped)
+
+        # Close any open lists
+        if in_itemize:
+            result.append("\\end{itemize}")
+        if in_enumerate:
+            result.append("\\end{enumerate}")
+
+        return "\n".join(result)
+
+
+def _escape_latex(text: str) -> str:
+    """Escape LaTeX special characters in plain text."""
+    replacements = {
+        "\\": "\\textbackslash{}",
+        "&": "\\&",
+        "%": "\\%",
+        "$": "\\$",
+        "#": "\\#",
+        "_": "\\_",
+        "{": "\\{",
+        "}": "\\}",
+        "~": "\\textasciitilde{}",
+        "^": "\\^{}",
+    }
+    for char, replacement in replacements.items():
+        text = text.replace(char, replacement)
+    return text
+
+
+def _apply_inline_formatting(text: str) -> str:
+    """Convert markdown inline formatting to LaTeX.
+
+    Handles **bold** → \\textbf{} and *italic* → \\textit{}.
+    """
+    # Bold: **text** or __text__
+    text = re.sub(r"\*\*(.+?)\*\*", r"\\textbf{\1}", text)
+    text = re.sub(r"__(.+?)__", r"\\textbf{\1}", text)
+    # Italic: *text* or _text_
+    text = re.sub(r"\*(.+?)\*", r"\\textit{\1}", text)
+    text = re.sub(r"(?<!\w)_(.+?)_(?!\w)", r"\\textit{\1}", text)
+    return text
+

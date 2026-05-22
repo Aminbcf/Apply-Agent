@@ -1,60 +1,40 @@
-% ============================================================
-%  Apply-Agent – Cover Letter Template
-%  Placeholders replaced by LLM / JobMatchService before
-%  compilation.  All tokens use UPPER_SNAKE_CASE convention.
-% ============================================================
 \documentclass[11pt,a4paper]{article}
-
-% ── Packages ─────────────────────────────────────────────────
+\usepackage[margin=1in]{geometry}
 \usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-\usepackage{microtype}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{parskip}
-\usepackage{hyperref}
 \usepackage{xcolor}
+\usepackage{hyperref}
 
-% ── Colours ──────────────────────────────────────────────────
-\definecolor{accent}{HTML}{1D3557}
+% Colors
+\definecolor{headerblue}{RGB}{45,80,140}
 
-% ─────────────────────────────────────────────────────────────
-\begin{document}
+% Remove page numbers
 \pagestyle{empty}
 
-% ── Sender block ─────────────────────────────────────────────
+\begin{document}
+
+% Header
+\begin{flushleft}
+{\large\bfseries {{CANDIDATE_NAME}}}\\[2pt]
+{\small {{CANDIDATE_EMAIL}} \quad | \quad {{CANDIDATE_PHONE}} \quad | \quad {{CANDIDATE_LOCATION}}}
+\end{flushleft}
+
+\vspace{12pt}
+
+\begin{flushleft}
+{\small\today}
+\end{flushleft}
+
+\vspace{12pt}
+
+% Cover Letter Content (generated from markdown)
 \noindent
-{\large\bfseries\color{accent} CANDIDATE\_FULL\_NAME}\\
-CANDIDATE\_EMAIL\\
-CANDIDATE\_PHONE\\
-CANDIDATE\_LOCATION\\[12pt]
+{{CONTENT}}
 
-LETTER\_DATE\\[12pt]
+\vspace{24pt}
 
-% ── Recipient block ───────────────────────────────────────────
 \noindent
-HIRING\_MANAGER\_NAME\\
-COMPANY\_NAME\\
-COMPANY\_ADDRESS\\[20pt]
-
-% ── Salutation ────────────────────────────────────────────────
-\noindent Dear HIRING\_MANAGER\_SALUTATION,\\[12pt]
-
-% ── Opening paragraph ─────────────────────────────────────────
-COVER\_LETTER\_OPENING\\[10pt]
-
-% ── Body paragraphs ───────────────────────────────────────────
-COVER\_LETTER\_BODY\_P1\\[10pt]
-
-COVER\_LETTER\_BODY\_P2\\[10pt]
-
-COVER\_LETTER\_BODY\_P3\\[10pt]
-
-% ── Closing paragraph ─────────────────────────────────────────
-COVER\_LETTER\_CLOSING\\[20pt]
-
-% ── Signature ────────────────────────────────────────────────
-\noindent Sincerely,\\[14pt]
-\textbf{CANDIDATE\_FULL\_NAME}
+Sincerely,\\[12pt]
+{{CANDIDATE_NAME}}
 
 \end{document}

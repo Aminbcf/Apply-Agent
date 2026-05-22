@@ -25,13 +25,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from AI.llm.job_match_service import JobMatchService
 from database import get_db
 from models.job_application import JobApplication
+from models.user_profile import UserProfile
 from schemas.job_schemas import (
     JobEvaluationOut,
     JobOfferIn,
     JobStatusOut,
     LatexUpdate,
     WorkflowStatusUpdate,
+    JobApplicationListOut,
+    JobConfirmIn,
+    JobDocumentUpdate,
 )
+from utils.latex_renderer import LatexRenderer, LatexRenderError
+from config import settings
+import model_registry
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 logger = logging.getLogger(__name__)
@@ -58,10 +65,37 @@ async def _get_job_or_404(job_id: str, db: AsyncSession) -> JobApplication:
 
 
 def _make_service(db: AsyncSession) -> JobMatchService:
-    return JobMatchService(db=db)
+    return JobMatchService(
+        db=db,
+        embedding_adapter=model_registry.get_embedder(),
+        llm=model_registry.get_llm(),
+    )
 
 
 # ── Endpoints ─────────────────────────────────────────────────
+
+@router.get("", response_model=list[JobApplicationListOut])
+async def list_jobs(db: DbDep):
+    """Retrieve all tracked job applications ordered by latest first."""
+    result = await db.execute(
+        select(JobApplication).order_by(JobApplication.created_at.desc())
+    )
+    jobs = result.scalars().all()
+    return [
+        JobApplicationListOut(
+            job_id=job.id,
+            company_name=job.company_name,
+            job_title=job.job_title,
+            match_score=job.match_score,
+            workflow_status=job.workflow_status,
+            created_at=job.created_at.isoformat(),
+            processing=job.processing,
+            confirmed=job.confirmed,
+            cv_text=job.cv_text,
+            cover_letter_text=job.cover_letter_text,
+        )
+        for job in jobs
+    ]
 
 @router.post("/evaluate", status_code=202)
 async def evaluate_job(
@@ -83,9 +117,6 @@ async def evaluate_job(
         description=payload.description,
         session_id=payload.session_id,
     )
-
-    # Enqueue PDF generation without blocking the response
-    background_tasks.add_task(service.generate_documents, str(result.job_id))
 
     logger.info(
         "Job %s queued for PDF generation (score=%.1f%%)",
@@ -218,3 +249,115 @@ async def regenerate_pdf(
 
     logger.info("Re-render queued for job %s", str(job.id))
     return {"job_id": str(job.id), "doc_type": doc_type, "queued": True}
+
+
+@router.post("/{job_id}/confirm", responses={404: {"description": "Not found"}})
+async def confirm_job(
+    job_id: str,
+    payload: JobConfirmIn,
+    db: DbDep,
+) -> dict:
+    """Confirm the generated documents and compile them to PDF.
+
+    Takes the (possibly user-edited) markdown text for CV and cover letter,
+    injects them into LaTeX templates, compiles PDFs, and marks the job
+    as confirmed.
+    """
+    job = await _get_job_or_404(job_id, db)
+
+    # Get user profile for template personalization
+    result = await db.execute(select(UserProfile))
+    profile = result.scalars().first()
+    user_info = {}
+    if profile:
+        user_info = {
+            "name": profile.full_name or "",
+            "email": profile.email or "",
+            "phone": profile.phone or "",
+            "location": profile.location or "",
+        }
+
+    # Save the edited text
+    job.cv_text = payload.cv_text
+    job.cover_letter_text = payload.cover_letter_text
+    job.processing = True
+    await db.commit()
+
+    # Compile PDFs from markdown
+    renderer = LatexRenderer(
+        output_dir=settings.latex_output_dir,
+        timeout=settings.pdflatex_timeout_seconds,
+    )
+
+    try:
+        cv_pdf = renderer.render_from_markdown(
+            payload.cv_text, "cv", str(job.id), user_info
+        )
+        cl_pdf = renderer.render_from_markdown(
+            payload.cover_letter_text, "cover", str(job.id), user_info
+        )
+
+        job.cv_pdf_path = str(cv_pdf)
+        job.cover_letter_pdf_path = str(cl_pdf)
+        job.confirmed = True
+        job.processing = False
+        await db.commit()
+
+        logger.info("Job %s confirmed and PDFs generated", job_id)
+        return {
+            "job_id": str(job.id),
+            "confirmed": True,
+            "cv_pdf_url": f"/jobs/{job_id}/download?file_type=cv",
+            "cover_letter_pdf_url": f"/jobs/{job_id}/download?file_type=cover",
+        }
+    except LatexRenderError as exc:
+        job.processing = False
+        await db.commit()
+        logger.exception("PDF compilation failed for job %s: %s", job_id, exc)
+        raise HTTPException(status_code=500, detail=f"PDF compilation failed: {exc}")
+
+
+@router.patch("/{job_id}/documents", responses={404: {"description": "Not found"}})
+async def update_documents(
+    job_id: str,
+    payload: JobDocumentUpdate,
+    db: DbDep,
+) -> dict:
+    """Auto-save user-edited document text without compiling PDFs."""
+    job = await _get_job_or_404(job_id, db)
+
+    if payload.cv_text is not None:
+        job.cv_text = payload.cv_text
+    if payload.cover_letter_text is not None:
+        job.cover_letter_text = payload.cover_letter_text
+
+    await db.commit()
+    return {"job_id": str(job.id), "saved": True}
+
+
+@router.delete("/{job_id}", responses={404: {"description": "Not found"}})
+async def delete_job(
+    job_id: str,
+    db: DbDep,
+) -> dict:
+    """Delete a job application and its generated documents."""
+    job = await _get_job_or_404(job_id, db)
+
+    # Optional: Delete associated PDF files from disk
+    if job.cv_pdf_path and Path(job.cv_pdf_path).exists():
+        try:
+            Path(job.cv_pdf_path).unlink()
+        except OSError:
+            logger.warning(f"Failed to delete CV PDF: {job.cv_pdf_path}")
+            
+    if job.cover_letter_pdf_path and Path(job.cover_letter_pdf_path).exists():
+        try:
+            Path(job.cover_letter_pdf_path).unlink()
+        except OSError:
+            logger.warning(f"Failed to delete Cover Letter PDF: {job.cover_letter_pdf_path}")
+
+    await db.delete(job)
+    await db.commit()
+    
+    logger.info("Job %s deleted", job_id)
+    return {"job_id": str(job.id), "deleted": True}

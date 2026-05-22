@@ -4,8 +4,12 @@ import { useThemeStore } from "./stores/themeStore";
 import { AppShell } from "./components/Layout/AppShell";
 import { Dashboard } from "./pages/Dashboard/Dashboard";
 import { Onboarding } from "./pages/Onboarding/Onboarding";
+import { Applications } from "./pages/Applications/Applications";
+import { DocumentEditor } from "./pages/Applications/DocumentEditor";
+import { Interviews } from "./pages/Interviews/Interviews";
+import { Settings } from "./pages/Settings/Settings";
 
-// Temporary stubs for other pages
+// Temporary stub for pages not yet implemented
 const Stub = ({ title }: { title: string }) => (
   <div style={{ padding: "2rem 2.5rem" }}>
     <h2>{title}</h2>
@@ -28,9 +32,11 @@ function App() {
         <Route path="/" element={<AppShell />}>
           <Route index element={<Dashboard />} />
           <Route path="onboarding" element={<Onboarding />} />
-          <Route path="applications" element={<Stub title="Applications" />} />
-          <Route path="interview" element={<Stub title="Interview Prep" />} />
+          <Route path="applications" element={<Applications />} />
+          <Route path="applications/:jobId/edit" element={<DocumentEditor />} />
+          <Route path="interview" element={<Interviews />} />
           <Route path="history" element={<Stub title="History" />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
@@ -39,4 +45,3 @@ function App() {
 }
 
 export default App;
-

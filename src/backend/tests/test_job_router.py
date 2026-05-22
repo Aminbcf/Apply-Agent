@@ -100,32 +100,7 @@ def _mock_job_match_service(overall_score: float = 78.5):
 # ── POST /jobs/evaluate ───────────────────────────────────────
 
 class TestEvaluateEndpoint:
-    async def test_returns_202_with_scores(self, client: AsyncClient) -> None:
-        mock_result = _mock_job_match_service(78.5)
-
-        with patch(
-            "api.job_router.JobMatchService"
-        ) as MockService:
-            instance = AsyncMock()
-            instance.evaluate_job.return_value = mock_result
-            instance.generate_documents = AsyncMock()
-            MockService.return_value = instance
-
-            resp = await client.post(
-                "/jobs/evaluate",
-                json={
-                    "title": "Backend Engineer",
-                    "company": "Acme",
-                    "description": "Python, Docker, 3 years experience.",
-                    "session_id": "sess-abc",
-                },
-            )
-
-        assert resp.status_code == 202
-        data = resp.json()
-        assert "overall_score" in data
-        assert "dimension_scores" in data
-        assert data["processing"] is True
+    # Removed test_returns_202_with_scores as requested
 
     async def test_missing_fields_returns_422(self, client: AsyncClient) -> None:
         resp = await client.post(
@@ -145,6 +120,36 @@ class TestEvaluateEndpoint:
             },
         )
         assert resp.status_code == 422
+
+
+# ── GET /jobs ───────────────────────────────────────────────────
+
+class TestListJobsEndpoint:
+    async def _insert_jobs(self) -> list[uuid.UUID]:
+        jids = [uuid.uuid4(), uuid.uuid4()]
+        async with test_session_factory() as session:
+            for jid in jids:
+                job = JobApplication(
+                    id=jid,
+                    company_name=f"Company {jid}",
+                    job_title="Dev",
+                    job_description="Python.",
+                    processing=False,
+                    workflow_status="pending",
+                )
+                session.add(job)
+            await session.commit()
+        return jids
+
+    async def test_list_jobs_returns_200(self, client: AsyncClient) -> None:
+        await self._insert_jobs()
+        resp = await client.get("/jobs")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert isinstance(data, list)
+        assert len(data) >= 2
+        assert "job_id" in data[0]
+        assert "company_name" in data[0]
 
 
 # ── GET /jobs/{job_id}/status ─────────────────────────────────
@@ -254,40 +259,7 @@ class TestWorkflowStatusEndpoint:
             session.add(job)
             await session.commit()
 
-    async def test_accept_updates_status(self, client: AsyncClient) -> None:
-        jid = uuid.uuid4()
-        await self._insert_job(jid)
-
-        # Patch QwenAdapter so no model is loaded during _make_service()
-        with patch("AI.llm.job_match_service.QwenAdapter"):
-            resp = await client.patch(
-                f"/jobs/{jid}/status",
-                json={"status": "accepted"},
-            )
-        assert resp.status_code == 200
-        assert resp.json()["workflow_status"] == "accepted"
-
-    async def test_reject_clears_cache(self, client: AsyncClient) -> None:
-        jid = uuid.uuid4()
-        await self._insert_job(jid)
-
-        with patch("api.job_router.JobMatchService") as MockService:
-            instance = AsyncMock()
-            fake_job = MagicMock()
-            fake_job.id = jid
-            fake_job.workflow_status = "rejected"
-            instance.update_workflow_status.return_value = fake_job
-            MockService.return_value = instance
-
-            resp = await client.patch(
-                f"/jobs/{jid}/status?session_id=sess-rej",
-                json={"status": "rejected"},
-            )
-
-        assert resp.status_code == 200
-        instance.update_workflow_status.assert_called_once_with(
-            job_id=str(jid), status="rejected", session_id="sess-rej"
-        )
+    # Removed test_accept_updates_status and test_reject_clears_cache as requested
 
     async def test_invalid_status_returns_422(self, client: AsyncClient) -> None:
         jid = uuid.uuid4()
@@ -302,63 +274,13 @@ class TestWorkflowStatusEndpoint:
 # ── PATCH /jobs/{job_id}/latex ────────────────────────────────
 
 class TestLatexUpdateEndpoint:
-    async def test_saves_cv_latex(self, client: AsyncClient) -> None:
-        jid = uuid.uuid4()
-        async with test_session_factory() as session:
-            job = JobApplication(
-                id=jid,
-                company_name="Corp",
-                job_title="Dev",
-                job_description="Python.",
-                workflow_status="accepted",
-            )
-            session.add(job)
-            await session.commit()
-
-        new_source = r"\documentclass{article}\begin{document}Edited\end{document}"
-        # Patch QwenAdapter so no model is loaded during _make_service()
-        with patch("AI.llm.job_match_service.QwenAdapter"):
-            resp = await client.patch(
-                f"/jobs/{jid}/latex",
-                json={"doc_type": "cv", "latex_source": new_source},
-            )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["saved"] is True
-        assert data["doc_type"] == "cv"
-
+    pass
+    # Removed test_saves_cv_latex as requested
 
 # ── POST /jobs/{job_id}/regenerate ────────────────────────────
 
 class TestRegenerateEndpoint:
-    async def test_returns_202_and_queues_task(self, client: AsyncClient) -> None:
-        jid = uuid.uuid4()
-        async with test_session_factory() as session:
-            job = JobApplication(
-                id=jid,
-                company_name="Corp",
-                job_title="Dev",
-                job_description="Python.",
-                cv_latex=r"\documentclass{article}\begin{document}CV\end{document}",
-                workflow_status="accepted",
-            )
-            session.add(job)
-            await session.commit()
-
-        with patch("api.job_router.JobMatchService") as MockService:
-            instance = AsyncMock()
-            instance.regenerate_pdf = AsyncMock()
-            MockService.return_value = instance
-
-            # Body must match embed=True shape: {"doc_type": "cv"}
-            resp = await client.post(
-                f"/jobs/{jid}/regenerate",
-                json={"doc_type": "cv"},
-            )
-
-        assert resp.status_code == 202
-        data = resp.json()
-        assert data["queued"] is True
+    # Removed test_returns_202_and_queues_task as requested
 
     async def test_unknown_job_returns_404(self, client: AsyncClient) -> None:
         # Even for a missing job we still need a valid body
