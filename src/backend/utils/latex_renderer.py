@@ -212,28 +212,33 @@ class LatexRenderer:
         return False
 
     @staticmethod
+    def _process_list_closure(stripped: str, in_itemize: bool, in_enumerate: bool, result: list, enum_pat: str):
+        if not stripped.startswith(("- ", "* ")) and in_itemize:
+            result.append("\\end{itemize}")
+            in_itemize = False
+        if not re.match(enum_pat, stripped) and in_enumerate:
+            result.append("\\end{enumerate}")
+            in_enumerate = False
+        return in_itemize, in_enumerate
+
+    @staticmethod
     def _markdown_to_latex(md_text: str) -> str:
         """Convert basic markdown to LaTeX body content.
 
-        Supports: headings (## → \\section), bold, italic, bullet lists,
+        Supports: headings (## → \section), bold, italic, bullet lists,
         numbered lists, and paragraphs.
         """
         ENUMERATE_PATTERN = r"^\d+\.\s"
-        lines = md_text.split("\n")
         result = []
-        in_itemize = False
-        in_enumerate = False
+        in_itemize, in_enumerate = False, False
 
-        for line in lines:
+        for line in md_text.split("\n"):
             stripped = line.strip()
 
             # Close open lists if line is not a list item
-            if not stripped.startswith(("- ", "* ")) and in_itemize:
-                result.append("\\end{itemize}")
-                in_itemize = False
-            if not re.match(ENUMERATE_PATTERN, stripped) and in_enumerate:
-                result.append("\\end{enumerate}")
-                in_enumerate = False
+            in_itemize, in_enumerate = LatexRenderer._process_list_closure(
+                stripped, in_itemize, in_enumerate, result, ENUMERATE_PATTERN
+            )
 
             if LatexRenderer._process_heading(stripped, result):
                 continue
@@ -260,6 +265,12 @@ class LatexRenderer:
                 result.append(_apply_inline_formatting(_escape_latex(stripped)))
 
         # Close any open lists
+        if in_itemize:
+            result.append("\\end{itemize}")
+        if in_enumerate:
+            result.append("\\end{enumerate}")
+
+        return "\n".join(result)ts
         if in_itemize:
             result.append("\\end{itemize}")
         if in_enumerate:

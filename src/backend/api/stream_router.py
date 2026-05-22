@@ -49,6 +49,40 @@ logger = logging.getLogger(__name__)
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 
 
+async def _fetch_rag_context(db: AsyncSession, job_id: str):
+    cv_context = await retrieve_cv_context(db)
+    job_context = await retrieve_job_context(db, job_id)
+    few_shot = await retrieve_few_shot_examples(
+        db,
+        limit=settings.rag_few_shot_limit,
+        max_chars=settings.rag_example_max_chars,
+    )
+    example_files = retrieve_example_files(max_chars=settings.rag_example_max_chars)
+    return cv_context, job_context, few_shot, example_files
+
+def _handle_sse_event(event_type: str, payload: any, prefix: str, state: dict) -> str | None:
+    if event_type == "worker_done":
+        state["finished_workers"] += 1
+    elif event_type == "error":
+        return _sse_event("error", {"message": f"{prefix.upper()} generation failed: {payload}"})
+    elif event_type == "final":
+        if prefix == "cv":
+            cv_full_text = assemble_cv_latex(payload)
+            state["cv_full"] = cv_full_text
+            return _sse_event("cv_complete", {"text": cv_full_text})
+        else:
+            state["cl_full"] = payload
+            return _sse_event("cover_complete", {"text": payload})
+    elif event_type == "token" and prefix == "cover":
+        return _sse_event("cover_token", {"token": payload})
+    elif event_type == "start" and prefix == "cv":
+        return _sse_event("cv_section_start", {"section": payload})
+    elif event_type == "done" and prefix == "cv":
+        return _sse_event("cv_section_done", {"section": payload, "ok": True})
+    return None
+
+
+
 class GenerateStreamIn(BaseModel):
     """Request body for the streaming generation endpoint."""
 
@@ -79,21 +113,13 @@ async def _sse_generator(job_id: str, db: AsyncSession):
 
     # ── Retrieve full RAG context ────────────────────────────────────────────
     try:
-        cv_context = await retrieve_cv_context(db)
-        job_context = await retrieve_job_context(db, job_id)
-        few_shot = await retrieve_few_shot_examples(
-            db,
-            limit=settings.rag_few_shot_limit,
-            max_chars=settings.rag_example_max_chars,
-        )
-        example_files = retrieve_example_files(max_chars=settings.rag_example_max_chars)
+        cv_context, job_context, few_shot, example_files = await _fetch_rag_context(db, job_id)
     except Exception as exc:  # noqa: BLE001
         logger.exception("RAG context retrieval failed for job %s", job_id)
         yield _sse_event("error", {"message": f"Context retrieval failed: {exc}"})
         return
 
     # ── Multiplex Generation ─────────────────────────────────────────────────
-    cv_sections = {}
     cv_full = ""
     cl_full = ""
 
@@ -114,27 +140,6 @@ async def _sse_generator(job_id: str, db: AsyncSession):
 
     task1 = asyncio.create_task(worker(cv_gen, "cv"))
     task2 = asyncio.create_task(worker(cl_gen, "cover"))
-
-    def _handle_sse_event(event_type, payload, prefix, state):
-        if event_type == "worker_done":
-            state["finished_workers"] += 1
-        elif event_type == "error":
-            return _sse_event("error", {"message": f"{prefix.upper()} generation failed: {payload}"})
-        elif event_type == "final":
-            if prefix == "cv":
-                cv_full_text = assemble_cv_latex(payload)
-                state["cv_full"] = cv_full_text
-                return _sse_event("cv_complete", {"text": cv_full_text})
-            else:
-                state["cl_full"] = payload
-                return _sse_event("cover_complete", {"text": payload})
-        elif event_type == "token" and prefix == "cover":
-            return _sse_event("cover_token", {"token": payload})
-        elif event_type == "start" and prefix == "cv":
-            return _sse_event("cv_section_start", {"section": payload})
-        elif event_type == "done" and prefix == "cv":
-            return _sse_event("cv_section_done", {"section": payload, "ok": True})
-        return None
 
     state = {"finished_workers": 0, "cv_full": "", "cl_full": ""}
     while state["finished_workers"] < 2:

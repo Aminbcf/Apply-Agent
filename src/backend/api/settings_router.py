@@ -116,10 +116,8 @@ async def update_llm_settings(payload: LlmSettingsIn) -> LlmSettingsOut:
     for key, value in updates.items():
         object.__setattr__(current_settings, key, value)
 
-    log_updates = updates.copy()
-    if "external_api_key" in log_updates:
-        log_updates["external_api_key"] = "***"
-    logger.info("LLM settings updated: %s", log_updates)
+    keys_updated = list(updates.keys())
+    logger.info("LLM settings updated for keys: %s", keys_updated)
 
     # Build the new adapter and hot-swap
     new_adapter = get_llm_adapter(current_settings)

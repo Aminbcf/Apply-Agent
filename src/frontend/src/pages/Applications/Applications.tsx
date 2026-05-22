@@ -289,8 +289,8 @@ export function Applications() {
 
       {/* New Application Modal */}
       {isModalOpen && (
-        <div className="modal-overlay" role="button" tabIndex={0} onClick={() => setIsModalOpen(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsModalOpen(false); }}>
-          <div role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
           <Card
             padding="lg"
             className="modal-content"

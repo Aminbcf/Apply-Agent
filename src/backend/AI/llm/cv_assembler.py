@@ -184,6 +184,37 @@ def _assemble_projects(data: dict) -> str:
 
 def assemble_cv_latex(sections: dict) -> str:
     """Fills the LaTeX template with the provided sections."""
+    CV_LATEX_TEMPLATE = r"""\documentclass[11pt,a4paper]{moderncv}
+\moderncvstyle{banking}
+\moderncvcolor{blue}
+\usepackage[margin=1.1cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{fontawesome5}
+\name{_FIRST_NAME_}{_LAST_NAME_}
+\title{_TITLE_}
+\phone[mobile]{_PHONE_}
+\email{_EMAIL_}
+_LINKEDIN_LINE_
+_GITHUB_LINE_
+\begin{document}
+\makecvtitle
+
+\section{Summary}
+\cvitem{}{_SUMMARY_}
+
+\section{Experience}
+_EXPERIENCE_ENTRIES_
+
+\section{Education}
+_EDUCATION_ENTRIES_
+
+\section{Skills}
+_SKILLS_ENTRIES_
+
+\section{Projects}
+_PROJECT_ENTRIES_
+\end{document}
+"""
     data = validate_cv_sections(sections)
     latex = CV_LATEX_TEMPLATE
 
@@ -236,7 +267,5 @@ def assemble_cv_latex(sections: dict) -> str:
 
     # Projects
     latex = latex.replace("_PROJECT_ENTRIES_", _assemble_projects(data))
-
-    return latex
 
     return latex

@@ -107,7 +107,7 @@
 
 .settings-tab-btn--active {
   background: var(--accent, #6366f1);
-  color: #fff;
+  color: #ffffff;
   box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
 }
 
@@ -277,13 +277,13 @@
 
 .settings-test-badge--ok {
   background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
+  color: #005a3e;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .settings-test-badge--error {
   background: rgba(239, 68, 68, 0.12);
-  color: #f87171;
+  color: #8a1515;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
@@ -313,7 +313,7 @@
 
 .settings-btn--primary {
   background: var(--accent, #6366f1);
-  color: #fff;
+  color: #ffffff;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
 }
 
@@ -381,13 +381,13 @@
 
 .settings-toast--ok {
   background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  color: #005a3e;
   border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .settings-toast--error {
   background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+  color: #8a1515;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 

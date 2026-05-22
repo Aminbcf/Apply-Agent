@@ -113,7 +113,7 @@ export function Settings() {
       <header className="settings-header">
         <h1 className="settings-title">
           <i className="bi bi-gear-wide-connected" aria-hidden="true" />
-          AI Settings
+          {" "}AI Settings
         </h1>
         <p className="settings-subtitle">
           Configure the language model used for CV and cover-letter generation.
@@ -124,10 +124,10 @@ export function Settings() {
       <section className="settings-card" aria-labelledby="provider-heading">
         <h2 id="provider-heading" className="settings-card-title">
           <i className="bi bi-cpu" aria-hidden="true" />
-          AI Provider
+          {" "}AI Provider
         </h2>
 
-        <div className="settings-toggle-row" role="group" aria-label="Provider selection">
+        <fieldset className="settings-toggle-row" aria-label="Provider selection">
           <button
             id="provider-local-btn"
             type="button"
@@ -135,7 +135,7 @@ export function Settings() {
             onClick={() => setProvider("local")}
           >
             <i className="bi bi-hdd-rack" aria-hidden="true" />
-            Local Model
+            {" "}Local Model
           </button>
           <button
             id="provider-external-btn"
@@ -144,16 +144,16 @@ export function Settings() {
             onClick={() => setProvider("external")}
           >
             <i className="bi bi-cloud-lightning" aria-hidden="true" />
-            External API
+            {" "}External API
           </button>
-        </div>
+        </fieldset>
 
         {/* ── External API fields ── */}
         {provider === "external" && (
           <div className="settings-fields">
             <div className="settings-field">
               <label htmlFor="base-url-input" className="settings-label">
-                Base URL
+                Base URL{" "}
                 <span className="settings-hint">Any OpenAI-compatible endpoint</span>
               </label>
               <input
@@ -169,7 +169,7 @@ export function Settings() {
 
             <div className="settings-field">
               <label htmlFor="model-input" className="settings-label">
-                Model Name
+                Model Name{" "}
                 <span className="settings-hint">Exact model slug from your provider</span>
               </label>
               <input
@@ -185,7 +185,7 @@ export function Settings() {
 
             <div className="settings-field">
               <label htmlFor="api-key-input" className="settings-label">
-                API Key
+                API Key{" "}
                 <span className="settings-hint">
                   {current?.has_api_key ? "🔑 Key configured — enter new to replace" : "Not configured"}
                 </span>
@@ -258,7 +258,7 @@ export function Settings() {
 
             <div className="settings-field">
               <label htmlFor="max-tokens-slider" className="settings-label">
-                Max New Tokens
+                Max New Tokens{" "}
                 <span className="settings-hint">Current: {maxTokens}</span>
               </label>
               <input
@@ -279,12 +279,12 @@ export function Settings() {
 
             <div className="settings-info-row">
               <i className="bi bi-memory" aria-hidden="true" />
-              Estimated VRAM usage: <strong>{vramEstimate}</strong>
+              {" "}Estimated VRAM usage: <strong>{vramEstimate}</strong>
             </div>
 
             <div className="settings-info-row">
               <i className="bi bi-cpu" aria-hidden="true" />
-              Active adapter:{" "}
+              {" "}Active adapter:{" "}
               <strong>{current?.active_adapter ?? "—"}</strong>
             </div>
           </div>

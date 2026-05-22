@@ -291,6 +291,13 @@ export async function streamGenerateDocuments(
     return;
   }
 
+  await processStreamChunks(reader, callbacks);
+}
+
+async function processStreamChunks(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  callbacks: StreamCallbacks
+) {
   const decoder = new TextDecoder();
   let buffer = "";
 
@@ -299,7 +306,6 @@ export async function streamGenerateDocuments(
     if (done) break;
 
     buffer += decoder.decode(value, { stream: true });
-
     const parts = buffer.split("\n\n");
     buffer = parts.pop() ?? "";
 
