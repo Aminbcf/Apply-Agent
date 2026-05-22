@@ -117,17 +117,17 @@
 
 .score-badge.high {
   background-color: rgba(16, 185, 129, 0.12);
-  color: #059669;
+  color: #047857;
 }
 
 .score-badge.medium {
   background-color: rgba(245, 158, 11, 0.12);
-  color: #d97706;
+  color: #b45309;
 }
 
 .score-badge.low {
   background-color: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 /* Status Section */
@@ -149,27 +149,27 @@
 
 .status-pending {
   background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
+  color: #4b5563;
 }
 
 .status-interview {
   background: rgba(59, 130, 246, 0.1);
-  color: #2563eb;
+  color: #1d4ed8;
 }
 
 .status-accepted {
   background: rgba(16, 185, 129, 0.1);
-  color: #059669;
+  color: #047857;
 }
 
 .status-rejected {
   background: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
+  color: #b91c1c;
 }
 
 .status-ghosted {
   background: rgba(75, 85, 99, 0.15);
-  color: #4b5563;
+  color: #374151;
 }
 
 .processing-indicator {

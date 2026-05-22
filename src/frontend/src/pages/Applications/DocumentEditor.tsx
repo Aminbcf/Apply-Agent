@@ -21,7 +21,6 @@ export function DocumentEditor() {
   const [error, setError] = useState<string | null>(null);
 
   // For streaming animation
-  const [streamingCv, setStreamingCv] = useState("");
   const [streamingCover, setStreamingCover] = useState("");
   const [cvSectionsStatus, setCvSectionsStatus] = useState<Record<string, "generating" | "done" | "error">>({});
 
@@ -46,7 +45,6 @@ export function DocumentEditor() {
       },
       onCvComplete: (text) => {
         setCvText(text);
-        setStreamingCv(text);
         setPhase("generating_cover");
       },
       onCoverToken: (token) => {
@@ -138,19 +136,19 @@ export function DocumentEditor() {
               {phase === "generating_cv" && (
                 <span className="panel-status generating">
                   <span className="pulse-dot" />
-                  Generating…
+                  {" "}Generating…
                 </span>
               )}
               {phase === "generating_cover" && (
                 <span className="panel-status complete">
                   <i className="bi bi-check-circle-fill" />
-                  Complete
+                  {" "}Complete
                 </span>
               )}
               {isEditable && (
                 <span className="panel-status editable">
                   <i className="bi bi-pencil" />
-                  Editable
+                  {" "}Editable
                 </span>
               )}
             </div>
@@ -169,7 +167,7 @@ export function DocumentEditor() {
                   <div className="cv-sections-checklist">
                     {Object.entries(cvSectionsStatus).map(([section, status]) => (
                       <div key={section} className={`checklist-item ${status}`}>
-                        {status === "generating" && <div className="spinner-border spinner-border-sm text-primary me-2" role="status" />}
+                        {status === "generating" && <output className="spinner-border spinner-border-sm text-primary me-2" />}
                         {status === "done" && <i className="bi bi-check-circle-fill text-success me-2" />}
                         {status === "error" && <i className="bi bi-x-circle-fill text-danger me-2" />}
                         <span className="section-name">Generating {section.charAt(0).toUpperCase() + section.slice(1)}...</span>
@@ -177,7 +175,7 @@ export function DocumentEditor() {
                     ))}
                     {Object.keys(cvSectionsStatus).length === 0 && (
                       <div className="checklist-item generating">
-                        <div className="spinner-border spinner-border-sm text-primary me-2" role="status" />
+                        <output className="spinner-border spinner-border-sm text-primary me-2" />
                         <span className="section-name">Initializing parallel extraction...</span>
                       </div>
                     )}
@@ -197,19 +195,19 @@ export function DocumentEditor() {
               {phase === "generating_cover" && (
                 <span className="panel-status generating">
                   <span className="pulse-dot" />
-                  Generating…
+                  {" "}Generating…
                 </span>
               )}
               {(phase === "generating_cv") && (
                 <span className="panel-status waiting">
                   <i className="bi bi-hourglass-split" />
-                  Waiting…
+                  {" "}Waiting…
                 </span>
               )}
               {isEditable && (
                 <span className="panel-status editable">
                   <i className="bi bi-pencil" />
-                  Editable
+                  {" "}Editable
                 </span>
               )}
             </div>
@@ -248,7 +246,7 @@ export function DocumentEditor() {
 
           {isGenerating && (
             <div className="generation-progress">
-              <div className="spinner-border spinner-border-sm" role="status" />
+              <output className="spinner-border spinner-border-sm" />
               <span>
                 {phase === "generating_cv" ? "Generating CV…" : "Generating Cover Letter…"}
               </span>

@@ -251,7 +251,7 @@ async def regenerate_pdf(
     return {"job_id": str(job.id), "doc_type": doc_type, "queued": True}
 
 
-@router.post("/{job_id}/confirm", responses={404: {"description": "Not found"}})
+@router.post("/{job_id}/confirm", responses={404: {"description": "Not found"}, 500: {"description": "PDF compilation failed"}})
 async def confirm_job(
     job_id: str,
     payload: JobConfirmIn,
@@ -303,7 +303,7 @@ async def confirm_job(
         job.processing = False
         await db.commit()
 
-        logger.info("Job %s confirmed and PDFs generated", job_id)
+        logger.info("Job %s confirmed and PDFs generated", job.id)
         return {
             "job_id": str(job.id),
             "confirmed": True,
@@ -359,5 +359,5 @@ async def delete_job(
     await db.delete(job)
     await db.commit()
     
-    logger.info("Job %s deleted", job_id)
+    logger.info("Job %s deleted", job.id)
     return {"job_id": str(job.id), "deleted": True}

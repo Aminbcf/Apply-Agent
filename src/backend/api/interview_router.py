@@ -52,7 +52,7 @@ async def list_interviews(db: DbDep):
     ]
 
 
-@router.get("/{job_id}")
+@router.get("/{job_id}", responses={404: {"description": "Interview not found"}})
 async def get_interview_detail(job_id: str, db: DbDep):
     """Get full details of an interview application including documents."""
     try:

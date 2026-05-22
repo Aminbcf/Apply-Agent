@@ -148,7 +148,8 @@ class TestRetrieveJobContext:
         result = await retrieve_job_context(mock_db, str(mock_job.id))
         assert result["title"] == "AI Engineer"
         assert result["company"] == "Acme Corp"
-        assert result["match_score"] == 78.5
+        import math
+        assert math.isclose(result["match_score"], 78.5)
 
 
 # ── retrieve_few_shot_examples ────────────────────────────────────────────────

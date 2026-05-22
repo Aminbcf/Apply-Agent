@@ -111,7 +111,7 @@ export function Applications() {
   };
 
   const handleDeleteJob = async (jobId: string) => {
-    if (!window.confirm("Are you sure you want to delete this job application? This action cannot be undone.")) return;
+    if (!globalThis.confirm("Are you sure you want to delete this job application? This action cannot be undone.")) return;
     
     try {
       await deleteJob(jobId);
@@ -133,6 +133,145 @@ export function Applications() {
     window.open(`http://127.0.0.1:8000/jobs/${jobId}/download?file_type=${type}`, "_blank");
   };
 
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="loading-state">
+          <output className="spinner-border" />
+          <span>Loading applications…</span>
+        </div>
+      );
+    }
+    if (jobs.length === 0) {
+      return (
+        <Card padding="lg" style={{ textAlign: "center", marginTop: "2rem" }}>
+          <div className="empty-state">
+            <i className="bi bi-briefcase" />
+            <h3>No applications yet</h3>
+            <p>Add your first job description to get a tailored CV and cover letter.</p>
+            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+              Add First Job
+            </Button>
+          </div>
+        </Card>
+      );
+    }
+    return (
+      <div className="applications-grid">
+        {jobs.map((job) => {
+          const statusConf = STATUS_CONFIG[job.workflow_status] ?? STATUS_CONFIG.pending;
+
+          return (
+            <Card key={job.job_id} padding="lg" className="job-card">
+              <div className="job-header">
+                <div className="job-info" style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+                    <h3 className="job-title">{job.job_title}</h3>
+                    <button
+                      className="delete-job-btn"
+                      onClick={() => handleDeleteJob(job.job_id)}
+                      title="Delete Application"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}
+                    >
+                      <i className="bi bi-trash" style={{ color: '#dc2626', fontSize: '1.1rem' }}></i>
+                    </button>
+                  </div>
+                  <p className="company-name">
+                    <i className="bi bi-building" />
+                    {job.company_name}
+                  </p>
+                </div>
+                {job.match_score !== null && (
+                  <div className={`score-badge ${getScoreColorClass(job.match_score)}`}>
+                    {Math.round(job.match_score)}%
+                  </div>
+                )}
+              </div>
+
+              {/* Status Section */}
+              <div className="job-status-section">
+                <div className={`status-badge ${statusConf.className}`}>
+                  <i className={`bi ${statusConf.icon}`} />
+                  <span>{statusConf.label}</span>
+                </div>
+
+                {job.processing && (
+                  <div className="processing-indicator">
+                    <output className="spinner-border spinner-border-sm" />
+                    <span>Processing…</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Dropdown */}
+              <div className="status-dropdown-wrapper">
+                <label htmlFor={`status-select-${job.job_id}`} className="status-label">Change Status</label>
+                <select
+                  id={`status-select-${job.job_id}`}
+                  className="status-select"
+                  value={job.workflow_status}
+                  onChange={(e) =>
+                    handleStatusChange(job.job_id, e.target.value as WorkflowStatus)
+                  }
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {STATUS_CONFIG[s].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Actions */}
+              <div className="job-actions">
+                {job.confirmed ? (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon="bi-file-earmark-pdf"
+                      onClick={() => downloadFile(job.job_id, "cv")}
+                      style={{ flex: 1 }}
+                    >
+                      CV PDF
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon="bi-envelope-paper"
+                      onClick={() => downloadFile(job.job_id, "cover")}
+                      style={{ flex: 1 }}
+                    >
+                      Cover Letter
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon="bi-pencil-square"
+                    onClick={() => navigate(`/applications/${job.job_id}/edit`)}
+                    disabled={job.processing}
+                    style={{ flex: 1 }}
+                  >
+                    {job.cv_text ? "Edit & Confirm" : "Generate Documents"}
+                  </Button>
+                )}
+              </div>
+
+              <div className="job-meta">
+                <span className="job-date">
+                  <i className="bi bi-calendar3" />
+                  {new Date(job.created_at).toLocaleDateString()}
+                </span>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <>
       <Header title="Applications" subtitle="Track and manage your job applications." />
@@ -145,141 +284,13 @@ export function Applications() {
           </Button>
         </div>
 
-        {loading ? (
-          <div className="loading-state">
-            <div className="spinner-border" role="status" />
-            <span>Loading applications…</span>
-          </div>
-        ) : jobs.length === 0 ? (
-          <Card padding="lg" style={{ textAlign: "center", marginTop: "2rem" }}>
-            <div className="empty-state">
-              <i className="bi bi-briefcase" />
-              <h3>No applications yet</h3>
-              <p>Add your first job description to get a tailored CV and cover letter.</p>
-              <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-                Add First Job
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <div className="applications-grid">
-            {jobs.map((job) => {
-              const statusConf = STATUS_CONFIG[job.workflow_status] ?? STATUS_CONFIG.pending;
-
-              return (
-                <Card key={job.job_id} padding="lg" className="job-card">
-                  <div className="job-header">
-                    <div className="job-info" style={{ width: '100%' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
-                        <h3 className="job-title">{job.job_title}</h3>
-                        <button
-                          className="delete-job-btn"
-                          onClick={() => handleDeleteJob(job.job_id)}
-                          title="Delete Application"
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem' }}
-                        >
-                          <i className="bi bi-trash" style={{ color: '#dc2626', fontSize: '1.1rem' }}></i>
-                        </button>
-                      </div>
-                      <p className="company-name">
-                        <i className="bi bi-building" />
-                        {job.company_name}
-                      </p>
-                    </div>
-                    {job.match_score !== null && (
-                      <div className={`score-badge ${getScoreColorClass(job.match_score)}`}>
-                        {Math.round(job.match_score)}%
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Status Section */}
-                  <div className="job-status-section">
-                    <div className={`status-badge ${statusConf.className}`}>
-                      <i className={`bi ${statusConf.icon}`} />
-                      <span>{statusConf.label}</span>
-                    </div>
-
-                    {job.processing && (
-                      <div className="processing-indicator">
-                        <div className="spinner-border spinner-border-sm" role="status" />
-                        <span>Processing…</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Status Dropdown */}
-                  <div className="status-dropdown-wrapper">
-                    <label className="status-label">Change Status</label>
-                    <select
-                      className="status-select"
-                      value={job.workflow_status}
-                      onChange={(e) =>
-                        handleStatusChange(job.job_id, e.target.value as WorkflowStatus)
-                      }
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>
-                          {STATUS_CONFIG[s].label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="job-actions">
-                    {job.confirmed ? (
-                      <>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          icon="bi-file-earmark-pdf"
-                          onClick={() => downloadFile(job.job_id, "cv")}
-                          style={{ flex: 1 }}
-                        >
-                          CV PDF
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          icon="bi-envelope-paper"
-                          onClick={() => downloadFile(job.job_id, "cover")}
-                          style={{ flex: 1 }}
-                        >
-                          Cover Letter
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        icon="bi-pencil-square"
-                        onClick={() => navigate(`/applications/${job.job_id}/edit`)}
-                        disabled={job.processing}
-                        style={{ flex: 1 }}
-                      >
-                        {job.cv_text ? "Edit & Confirm" : "Generate Documents"}
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="job-meta">
-                    <span className="job-date">
-                      <i className="bi bi-calendar3" />
-                      {new Date(job.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        {renderContent()}
       </div>
 
       {/* New Application Modal */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" role="button" tabIndex={0} onClick={() => setIsModalOpen(false)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsModalOpen(false); }}>
+          <div role="presentation" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           <Card
             padding="lg"
             className="modal-content"
@@ -311,9 +322,10 @@ export function Applications() {
                 />
               </div>
               <div className="form-group input-wrapper" style={{ marginTop: "1rem" }}>
-                <label className="input-label">Job Description</label>
+                <label htmlFor="job-description" className="input-label">Job Description</label>
                 <div className="input-container">
                   <textarea
+                    id="job-description"
                     className="input-field textarea-field"
                     rows={8}
                     value={description}

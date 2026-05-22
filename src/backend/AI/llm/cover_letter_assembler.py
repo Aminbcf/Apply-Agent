@@ -46,7 +46,7 @@ def validate_cl_sections(sections: dict) -> dict:
         
     return safe
 
-def assemble_cover_letter(sections: dict, job_ctx: dict, cv_ctx: dict) -> str:
+def assemble_cover_letter(sections: dict) -> str:
     """Assembles a cover letter from sections."""
     data = validate_cl_sections(sections)
     

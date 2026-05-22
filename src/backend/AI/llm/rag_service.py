@@ -39,6 +39,14 @@ _CL_EXAMPLES_DIR = _AI_DIR / "Cover-letter-Examples"
 # ── Retrieval helpers (all async, DB-backed) ──────────────────────────────────
 
 
+def _flatten_skills(profile_skills) -> List[str]:
+    skills_flat: List[str] = []
+    if profile_skills and isinstance(profile_skills, dict):
+        for v in profile_skills.values():
+            if isinstance(v, list):
+                skills_flat.extend(str(s) for s in v)
+    return skills_flat
+
 async def retrieve_cv_context(db: AsyncSession) -> dict:
     """Pull the full user profile from SQLite and return it as a structured dict.
 
@@ -54,11 +62,7 @@ async def retrieve_cv_context(db: AsyncSession) -> dict:
         logger.warning("retrieve_cv_context: no UserProfile found in DB")
         return {}
 
-    skills_flat: List[str] = []
-    if profile.skills and isinstance(profile.skills, dict):
-        for v in profile.skills.values():
-            if isinstance(v, list):
-                skills_flat.extend(str(s) for s in v)
+    skills_flat = _flatten_skills(profile.skills)
 
     education_entries = profile.education if isinstance(profile.education, list) else []
     experience_entries = profile.experience if isinstance(profile.experience, list) else []

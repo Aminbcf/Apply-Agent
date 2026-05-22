@@ -252,6 +252,22 @@ class JobMatchService:
         )
         return result.scalar_one_or_none()
 
+    def _extract_skills(self, profile: UserProfile) -> list:
+        skills = []
+        if profile.skills:
+            for k, v in profile.skills.items():
+                if isinstance(v, list):
+                    skills.extend(v)
+        return skills
+
+    def _extract_education(self, profile: UserProfile) -> str:
+        if not profile.education:
+            return ""
+        return " ".join(
+            str(e.get("degree", "")) + " " + str(e.get("institution", ""))
+            for e in profile.education if isinstance(e, dict)
+        )
+
     async def _build_cv_context(self, session_id: str) -> dict:
         """Build a simplified CV context dict from the user profile and history cache.
         """
@@ -272,16 +288,8 @@ class JobMatchService:
         summary_parts = [session_text]
 
         if profile:
-            if profile.skills:
-                for k, v in profile.skills.items():
-                    if isinstance(v, list):
-                        skills.extend(v)
-            
-            if profile.education:
-                education_level = " ".join(
-                    str(e.get("degree", "")) + " " + str(e.get("institution", ""))
-                    for e in profile.education if isinstance(e, dict)
-                )
+            skills = self._extract_skills(profile)
+            education_level = self._extract_education(profile)
 
             if profile.experience:
                 experience_years = len(profile.experience) * 2  # simple heuristic

@@ -199,12 +199,26 @@ class LatexRenderer:
             )
 
     @staticmethod
+    def _process_heading(stripped: str, result: list) -> bool:
+        if stripped.startswith("### "):
+            result.append(f"\\subsection*{{{_escape_latex(stripped[4:])}}}")
+            return True
+        if stripped.startswith("## "):
+            result.append(f"\\section*{{{_escape_latex(stripped[3:])}}}")
+            return True
+        if stripped.startswith("# "):
+            result.append(f"\\section*{{{_escape_latex(stripped[2:])}}}")
+            return True
+        return False
+
+    @staticmethod
     def _markdown_to_latex(md_text: str) -> str:
         """Convert basic markdown to LaTeX body content.
 
         Supports: headings (## → \\section), bold, italic, bullet lists,
         numbered lists, and paragraphs.
         """
+        ENUMERATE_PATTERN = r"^\d+\.\s"
         lines = md_text.split("\n")
         result = []
         in_itemize = False
@@ -214,45 +228,36 @@ class LatexRenderer:
             stripped = line.strip()
 
             # Close open lists if line is not a list item
-            if not stripped.startswith("- ") and not stripped.startswith("* ") and in_itemize:
+            if not stripped.startswith(("- ", "* ")) and in_itemize:
                 result.append("\\end{itemize}")
                 in_itemize = False
-            if not re.match(r"^\d+\.\s", stripped) and in_enumerate:
+            if not re.match(ENUMERATE_PATTERN, stripped) and in_enumerate:
                 result.append("\\end{enumerate}")
                 in_enumerate = False
 
-            # Headings
-            if stripped.startswith("### "):
-                result.append(f"\\subsection*{{{_escape_latex(stripped[4:])}}}")
-            elif stripped.startswith("## "):
-                result.append(f"\\section*{{{_escape_latex(stripped[3:])}}}")
-            elif stripped.startswith("# "):
-                result.append(f"\\section*{{{_escape_latex(stripped[2:])}}}")
+            if LatexRenderer._process_heading(stripped, result):
+                continue
+                
             # Bullet lists
-            elif stripped.startswith("- ") or stripped.startswith("* "):
+            if stripped.startswith(("- ", "* ")):
                 if not in_itemize:
                     result.append("\\begin{itemize}[nosep]")
                     in_itemize = True
-                item_text = _escape_latex(stripped[2:])
-                item_text = _apply_inline_formatting(item_text)
+                item_text = _apply_inline_formatting(_escape_latex(stripped[2:]))
                 result.append(f"  \\item {item_text}")
             # Numbered lists
-            elif re.match(r"^\d+\.\s", stripped):
+            elif re.match(ENUMERATE_PATTERN, stripped):
                 if not in_enumerate:
                     result.append("\\begin{enumerate}[nosep]")
                     in_enumerate = True
-                item_text = re.sub(r"^\d+\.\s", "", stripped)
-                item_text = _escape_latex(item_text)
-                item_text = _apply_inline_formatting(item_text)
+                item_text = _apply_inline_formatting(_escape_latex(re.sub(ENUMERATE_PATTERN, "", stripped)))
                 result.append(f"  \\item {item_text}")
             # Empty line = paragraph break
-            elif stripped == "":
+            elif not stripped:
                 result.append("")
             # Normal paragraph
             else:
-                escaped = _escape_latex(stripped)
-                escaped = _apply_inline_formatting(escaped)
-                result.append(escaped)
+                result.append(_apply_inline_formatting(_escape_latex(stripped)))
 
         # Close any open lists
         if in_itemize:

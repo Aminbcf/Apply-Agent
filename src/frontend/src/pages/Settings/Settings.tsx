@@ -101,7 +101,7 @@ export function Settings() {
     return (
       <div className="settings-page">
         <div className="settings-loading">
-          <span className="settings-spinner" />
+          <output className="settings-spinner" />
           Loading settings…
         </div>
       </div>
@@ -211,7 +211,7 @@ export function Settings() {
                 disabled={testStatus === "testing"}
               >
                 {testStatus === "testing" ? (
-                  <><span className="settings-spinner settings-spinner--sm" /> Testing…</>
+                  <><output className="settings-spinner settings-spinner--sm" /> Testing…</>
                 ) : (
                   <><i className="bi bi-lightning-charge" aria-hidden="true" /> Test Connection</>
                 )}
@@ -301,7 +301,7 @@ export function Settings() {
           disabled={saving}
         >
           {saving ? (
-            <><span className="settings-spinner settings-spinner--sm" /> Applying…</>
+            <><output className="settings-spinner settings-spinner--sm" /> Applying…</>
           ) : (
             <><i className="bi bi-check2-circle" /> Save & Apply</>
           )}
@@ -310,13 +310,12 @@ export function Settings() {
 
       {/* ── Toast ── */}
       {toast && (
-        <div
-          role="status"
+        <output
           className={`settings-toast ${toast.ok ? "settings-toast--ok" : "settings-toast--error"}`}
         >
           <i className={`bi ${toast.ok ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"}`} />
           {toast.msg}
-        </div>
+        </output>
       )}
     </div>
   );

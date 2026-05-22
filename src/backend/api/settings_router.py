@@ -68,7 +68,7 @@ class LlmTestOut(BaseModel):
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 
-@router.get("/llm", response_model=LlmSettingsOut)
+@router.get("/llm")
 async def get_llm_settings() -> LlmSettingsOut:
     """Return current LLM configuration.
 
@@ -87,7 +87,7 @@ async def get_llm_settings() -> LlmSettingsOut:
     )
 
 
-@router.post("/llm", response_model=LlmSettingsOut)
+@router.post("/llm")
 async def update_llm_settings(payload: LlmSettingsIn) -> LlmSettingsOut:
     """Update LLM provider / key / model and hot-swap the adapter.
 
@@ -116,7 +116,10 @@ async def update_llm_settings(payload: LlmSettingsIn) -> LlmSettingsOut:
     for key, value in updates.items():
         object.__setattr__(current_settings, key, value)
 
-    logger.info("LLM settings updated: %s", updates)
+    log_updates = updates.copy()
+    if "external_api_key" in log_updates:
+        log_updates["external_api_key"] = "***"
+    logger.info("LLM settings updated: %s", log_updates)
 
     # Build the new adapter and hot-swap
     new_adapter = get_llm_adapter(current_settings)
@@ -134,7 +137,7 @@ async def update_llm_settings(payload: LlmSettingsIn) -> LlmSettingsOut:
     )
 
 
-@router.get("/llm/test", response_model=LlmTestOut)
+@router.get("/llm/test")
 async def test_llm_connection() -> LlmTestOut:
     """Send a minimal prompt to the active LLM and return latency.
 
@@ -146,7 +149,7 @@ async def test_llm_connection() -> LlmTestOut:
 
     try:
         llm = model_registry.get_llm()
-        response = llm.generate(test_prompt)
+        llm.generate(test_prompt)
         latency_ms = round((time.perf_counter() - t0) * 1000, 1)
         model_used = (
             settings.external_api_model

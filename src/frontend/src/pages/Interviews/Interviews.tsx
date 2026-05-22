@@ -37,7 +37,7 @@ export function Interviews() {
       <div className="interviews-container">
         {loading ? (
           <div className="interviews-loading">
-            <div className="spinner-border" role="status" />
+            <output className="spinner-border" />
             <span>Loading interviews…</span>
           </div>
         ) : interviews.length === 0 ? (

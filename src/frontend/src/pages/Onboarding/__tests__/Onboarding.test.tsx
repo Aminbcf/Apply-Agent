@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import { Onboarding } from "../Onboarding";
 import * as api from "../../../services/api";
 
@@ -17,7 +18,7 @@ describe("Onboarding Component", () => {
 
   it("renders loading state initially", () => {
     vi.mocked(api.getProfile).mockReturnValue(new Promise(() => {})); // Never resolves
-    render(<Onboarding />);
+    render(<MemoryRouter><Onboarding /></MemoryRouter>);
     expect(screen.getByText("Loading your profile...")).toBeDefined();
   });
 
@@ -37,7 +38,7 @@ describe("Onboarding Component", () => {
       achievements: [],
     });
 
-    render(<Onboarding />);
+    render(<MemoryRouter><Onboarding /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.queryByText("Loading your profile...")).toBeNull();
@@ -66,7 +67,7 @@ describe("Onboarding Component", () => {
 
     vi.mocked(api.saveProfile).mockResolvedValue({} as api.UserProfileData);
 
-    render(<Onboarding />);
+    render(<MemoryRouter><Onboarding /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.queryByText("Loading your profile...")).toBeNull();
@@ -113,7 +114,7 @@ describe("Onboarding Component", () => {
       llm_context: { candidate: { name: "Jane Doe" } },
     });
 
-    render(<Onboarding />);
+    render(<MemoryRouter><Onboarding /></MemoryRouter>);
 
     await waitFor(() => {
       expect(screen.queryByText("Loading your profile...")).toBeNull();

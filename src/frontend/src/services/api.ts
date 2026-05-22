@@ -54,12 +54,12 @@ async function requestFormData<T>(path: string, formData: FormData): Promise<T> 
 
 export const apiClient = {
   get: <T>(path: string) => requestJson<T>(path),
-  post: <T>(path: string, body?: Record<string, unknown>) =>
+  post: <T>(path: string, body?: unknown) =>
     requestJson<T>(path, {
       method: "POST",
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
-  patch: <T>(path: string, body?: Record<string, unknown>) =>
+  patch: <T>(path: string, body?: unknown) =>
     requestJson<T>(path, {
       method: "PATCH",
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -108,7 +108,7 @@ export const getOnboardingStatus = () => apiClient.get<OnboardingStatus>("/onboa
 export const getProfile = () => apiClient.get<UserProfileData>("/profile/");
 
 export const saveProfile = (profile: UserProfileData) =>
-  apiClient.post<UserProfileData>("/profile/", profile as unknown as Record<string, unknown>);
+  apiClient.post<UserProfileData>("/profile/", profile);
 
 export const uploadOnboardingCv = (file: File) => {
   const formData = new FormData();
@@ -178,7 +178,7 @@ export type JobStatusOut = {
 
 export const getJobs = () => apiClient.get<JobApplicationListOut[]>("/jobs");
 
-export const evaluateJob = (data: JobOfferIn) => apiClient.post<JobEvaluationOut>("/jobs/evaluate", data as unknown as Record<string, unknown>);
+export const evaluateJob = (data: JobOfferIn) => apiClient.post<JobEvaluationOut>("/jobs/evaluate", data);
 
 export const getJobStatus = (jobId: string) => apiClient.get<JobStatusOut>(`/jobs/${jobId}/status`);
 
@@ -234,6 +234,41 @@ export type StreamCallbacks = {
   onDone: () => void;
 };
 
+function handleStreamEvent(eventType: string, eventData: string, callbacks: StreamCallbacks) {
+  try {
+    const parsed = JSON.parse(eventData);
+
+    switch (eventType) {
+      case "cv_section_start":
+        callbacks.onCvSectionStart?.(parsed.section);
+        break;
+      case "cv_section_done":
+        callbacks.onCvSectionDone?.(parsed.section, parsed.ok);
+        break;
+      case "cv_token":
+        callbacks.onCvToken(parsed.token);
+        break;
+      case "cv_complete":
+        callbacks.onCvComplete(parsed.text);
+        break;
+      case "cover_token":
+        callbacks.onCoverToken(parsed.token);
+        break;
+      case "cover_complete":
+        callbacks.onCoverComplete(parsed.text);
+        break;
+      case "error":
+        callbacks.onError(parsed.message);
+        break;
+      case "done":
+        callbacks.onDone();
+        break;
+    }
+  } catch {
+    // Skip malformed JSON
+  }
+}
+
 export async function streamGenerateDocuments(
   jobId: string,
   callbacks: StreamCallbacks,
@@ -265,9 +300,8 @@ export async function streamGenerateDocuments(
 
     buffer += decoder.decode(value, { stream: true });
 
-    // Parse SSE events from the buffer
     const parts = buffer.split("\n\n");
-    buffer = parts.pop() ?? ""; // Keep the incomplete part
+    buffer = parts.pop() ?? "";
 
     for (const part of parts) {
       const lines = part.trim().split("\n");
@@ -282,39 +316,8 @@ export async function streamGenerateDocuments(
         }
       }
 
-      if (!eventType || !eventData) continue;
-
-      try {
-        const parsed = JSON.parse(eventData);
-
-        switch (eventType) {
-          case "cv_section_start":
-            callbacks.onCvSectionStart?.(parsed.section);
-            break;
-          case "cv_section_done":
-            callbacks.onCvSectionDone?.(parsed.section, parsed.ok);
-            break;
-          case "cv_token":
-            callbacks.onCvToken(parsed.token);
-            break;
-          case "cv_complete":
-            callbacks.onCvComplete(parsed.text);
-            break;
-          case "cover_token":
-            callbacks.onCoverToken(parsed.token);
-            break;
-          case "cover_complete":
-            callbacks.onCoverComplete(parsed.text);
-            break;
-          case "error":
-            callbacks.onError(parsed.message);
-            break;
-          case "done":
-            callbacks.onDone();
-            break;
-        }
-      } catch {
-        // Skip malformed JSON
+      if (eventType && eventData) {
+        handleStreamEvent(eventType, eventData, callbacks);
       }
     }
   }
@@ -353,7 +356,7 @@ export const getLlmSettings = () =>
   apiClient.get<LlmSettingsOut>("/settings/llm");
 
 export const saveLlmSettings = (payload: LlmSettingsIn) =>
-  apiClient.post<LlmSettingsOut>("/settings/llm", payload as unknown as Record<string, unknown>);
+  apiClient.post<LlmSettingsOut>("/settings/llm", payload);
 
 export const testLlmConnection = () =>
   apiClient.get<LlmTestOut>("/settings/llm/test");
