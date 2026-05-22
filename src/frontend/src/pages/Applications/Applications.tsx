@@ -289,14 +289,25 @@ export function Applications() {
 
       {/* New Application Modal */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="modal-overlay" 
+          role="presentation"
+          onClick={() => setIsModalOpen(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setIsModalOpen(false); }}
+        >
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            onClick={(e) => e.stopPropagation()} 
+            onKeyDown={(e) => e.stopPropagation()}
+          >
           <Card
             padding="lg"
             className="modal-content"
           >
             <div className="modal-header">
-              <h3>New Job Application</h3>
+              <h3 id="modal-title">New Job Application</h3>
               <button className="close-btn" onClick={() => setIsModalOpen(false)}>
                 <i className="bi bi-x-lg" />
               </button>

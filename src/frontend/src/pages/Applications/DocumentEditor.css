@@ -17,7 +17,7 @@
   background: rgba(220, 38, 38, 0.1);
   border: 1px solid rgba(220, 38, 38, 0.3);
   border-radius: 8px;
-  color: #8a1515;
+  color: #fca5a5;
   font-size: 0.875rem;
 }
 
@@ -86,22 +86,22 @@
 
 .panel-status.generating {
   background: rgba(99, 102, 241, 0.1);
-  color: #123c9a;
+  color: #93c5fd;
 }
 
 .panel-status.complete {
   background: rgba(16, 185, 129, 0.1);
-  color: #005a3e;
+  color: #6ee7b7;
 }
 
 .panel-status.editable {
   background: rgba(245, 158, 11, 0.1);
-  color: #8c4006;
+  color: #fcd34d;
 }
 
 .panel-status.waiting {
   background: rgba(107, 114, 128, 0.1);
-  color: #303846;
+  color: #d1d5db;
 }
 
 /* Pulse dot animation for generating state */

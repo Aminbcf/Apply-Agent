@@ -310,22 +310,26 @@ async function processStreamChunks(
     buffer = parts.pop() ?? "";
 
     for (const part of parts) {
-      const lines = part.trim().split("\n");
-      let eventType = "";
-      let eventData = "";
-
-      for (const line of lines) {
-        if (line.startsWith("event: ")) {
-          eventType = line.slice(7).trim();
-        } else if (line.startsWith("data: ")) {
-          eventData = line.slice(6);
-        }
-      }
-
-      if (eventType && eventData) {
-        handleStreamEvent(eventType, eventData, callbacks);
-      }
+      processStreamPart(part, callbacks);
     }
+  }
+}
+
+function processStreamPart(part: string, callbacks: StreamCallbacks) {
+  const lines = part.trim().split("\n");
+  let eventType = "";
+  let eventData = "";
+
+  for (const line of lines) {
+    if (line.startsWith("event: ")) {
+      eventType = line.slice(7).trim();
+    } else if (line.startsWith("data: ")) {
+      eventData = line.slice(6);
+    }
+  }
+
+  if (eventType && eventData) {
+    handleStreamEvent(eventType, eventData, callbacks);
   }
 }
 // ── LLM Settings API ─────────────────────────────────────────────────────────
