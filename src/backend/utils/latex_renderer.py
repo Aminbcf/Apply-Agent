@@ -270,12 +270,6 @@ class LatexRenderer:
         if in_enumerate:
             result.append("\\end{enumerate}")
 
-        return "\n".join(result)ts
-        if in_itemize:
-            result.append("\\end{itemize}")
-        if in_enumerate:
-            result.append("\\end{enumerate}")
-
         return "\n".join(result)
 
 
