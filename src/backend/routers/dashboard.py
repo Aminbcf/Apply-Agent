@@ -21,8 +21,16 @@ async def get_dashboard_stats(db: Annotated[AsyncSession, Depends(get_db)]) -> d
     )
     active_count = result.scalar() or 0
 
+    # Count interview-status jobs
+    interview_result = await db.execute(
+        select(func.count())
+        .select_from(JobApplication)
+        .where(JobApplication.workflow_status == "interview")
+    )
+    interview_count = interview_result.scalar() or 0
+
     return {
         "active_applications": active_count,
         "generated_documents": active_count,  # 1-to-1 mock for scaffold
-        "interview_sessions": 0,
+        "interview_sessions": interview_count,
     }

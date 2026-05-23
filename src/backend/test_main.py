@@ -26,4 +26,6 @@ def test_health_check():
     """Test the health check endpoint."""
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    json_resp = response.json()
+    assert json_resp["status"] == "ok"
+    assert "models_ready" in json_resp

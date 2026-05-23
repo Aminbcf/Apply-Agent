@@ -14,9 +14,9 @@ pytest
 pytest-cov
 pytest-xdist
 pytest-asyncio
-httpx
-safety
+httpx>=0.27
+bitsandbytes>=0.43
 pypdf
 python-docx
 python-multipart
-
+llama-cpp-python>=0.2.75

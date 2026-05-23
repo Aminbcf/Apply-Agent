@@ -14,4 +14,40 @@
 - **SQLAlchemy UUID Lookups in SQLite:** When fetching records by UUID from a SQLite database via SQLAlchemy, explicitly parse string identifiers into `uuid.UUID` objects before the `where()` clause. Passing string variables directly into `where(Model.id == job_id_str)` throws a `StatementError ('str' object has no attribute 'hex')` (Session ID: phase7_20260521).
 - **Mocking SQLAlchemy add() in Async Tests:** In async FastAPI endpoint tests, `AsyncSession.add()` is a synchronous method while `commit()` and `refresh()` are coroutines. When mocking the database session (e.g. `mock_db = AsyncMock()`), explicitly set `mock_db.add = MagicMock()` to prevent `RuntimeWarning: coroutine was never awaited` during tests (Session ID: phase7_20260521).
 
+## RAG, Speed & External API Architecture (Session: phase_rag_opt_20260522)
+
+### External API Provider Design
+- **Pattern:** `ExternalApiAdapter(LLMAdapter)` in `llm_interface.py` — OpenAI-compatible REST, user-configurable `base_url`, `model`, `api_key`. Factory `get_llm_adapter(settings)` returns `ExternalApiAdapter` when `settings.llm_provider == "external"`, else `QwenAdapter`.
+- **Settings fields added to `config.py`:** `llm_provider`, `external_api_base_url`, `external_api_key`, `external_api_model`, `external_api_timeout`, `llm_quantize_4bit`, `llm_max_new_tokens`.
+- **Hot-swap:** `model_registry.swap_llm(adapter)` allows runtime provider change via `POST /settings/llm` without restart.
+- **Frontend:** Full Settings page at `/settings` — user enters Base URL + Model Name + API Key + "Test Connection" button. No predefined provider list; fully free-form.
+
+### Local Model Optimization (4 GB VRAM GPU)
+- **Quantization:** `BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16, bnb_4bit_quant_type="nf4", bnb_4bit_use_double_quant=True)`. Expected VRAM: ~1.2 GB for 1.5B param Qwen model.
+- **When `llm_provider == "external"`:** Skip all local model loading at startup (startup < 1 s).
+- **`max_new_tokens`:** Raised from 256 → `settings.llm_max_new_tokens` (default 1024).
+
+### RAG Context Sources (ALL of the following)
+- `UserProfile` from SQLite: name, email, phone, skills, education, experience, career_goals, raw_cv_text, projects, certifications, languages.
+- `JobApplication` record: title, company, description, extracted checklist, dimension_scores.
+- Past **accepted/confirmed** `JobApplication` records (up to 3 most recent) as few-shot examples: cv_text_snippet + cover_letter_snippet.
+- Files from `AI/CV-Examples/` directory (markdown reference CVs).
+- Files from `AI/Cover-letter-Examples/` directory (markdown reference cover letters).
+
+### Prompt Architecture
+- Prompts live in `AI/llm/prompts/{scenario}.md` and use `{cv_context_json}`, `{job_context_json}`, `{few_shot_examples_json}`, `{cv_examples}`, `{cover_letter_examples}` placeholders.
+- `build_rag_prompt(scenario, cv_context, job_context, few_shot_examples, example_files)` replaces the old `build_prompt`.
+- Old `build_prompt` is kept as a thin compatibility shim calling `build_rag_prompt`.
+
+### Settings API Endpoints
+- `GET /settings/llm` — returns current provider config (key is redacted, only `has_api_key: bool`).
+- `POST /settings/llm` — updates config at runtime, hot-swaps adapter.
+- `GET /settings/llm/test` — sends a minimal test prompt, returns `{ ok, latency_ms, model_used }`.
+
+### File Locations Summary
+- New: `src/backend/api/settings_router.py`
+- New: `src/frontend/src/pages/Settings/Settings.tsx`
+- Modified: `config.py`, `llm_interface.py`, `rag_service.py`, `stream_router.py`, `model_registry.py`, `main.py`, `App.tsx`, `api.ts`, `AppShell`
+- Modified prompts: `AI/llm/prompts/cv.md`, `cover_letter.md`; New: `job_match.md`
+- New tests: `tests/test_llm_interface.py`, `tests/test_rag_service.py`, `tests/test_settings_router.py`
 

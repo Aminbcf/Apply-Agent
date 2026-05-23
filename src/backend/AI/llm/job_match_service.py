@@ -34,6 +34,7 @@ from AI.llm.llm_interface import QwenAdapter, build_prompt
 from AI.llm.match_scorer import DimensionScores, MatchScorer
 from config import settings
 from models.job_application import JobApplication
+from models.user_profile import UserProfile
 from schemas.job_schemas import JobEvaluationOut
 from schemas.job_schemas import DimensionScores as DimensionScoresSchema
 from utils.latex_renderer import LatexRenderer, LatexRenderError
@@ -108,7 +109,7 @@ class JobMatchService:
         checklist = self.extractor.extract(description)
 
         # 2 — Embed
-        cv_context = self._build_cv_context(session_id)
+        cv_context = await self._build_cv_context(session_id)
         embeddings = self._compute_embeddings(description, cv_context)
 
         # 3 — Score
@@ -147,45 +148,7 @@ class JobMatchService:
             cover_letter_pdf_url=None,
         )
 
-    async def generate_documents(self, job_id: str) -> None:
-        """Background task: generate LaTeX then compile PDFs.
 
-        Sets ``processing=False`` when done (or on failure, logs the error
-        and still clears the flag so the frontend stops polling).
-        """
-        job = await self._get_job(job_id)
-        if job is None:
-            logger.error("generate_documents: job %s not found", job_id)
-            return
-
-        try:
-            # Build prompts
-            cv_prompt = build_prompt("cv", job.job_description)
-            cl_prompt = build_prompt("cover_letter", job.job_description)
-
-            # Generate LaTeX via the fine-tuned Qwen model
-            cv_latex = self.llm.generate(cv_prompt)
-            cl_latex = self.llm.generate(cl_prompt)
-
-            # Compile to PDF
-            cv_pdf: Path = self.renderer.render(cv_latex, str(job.id), "cv")
-            cl_pdf: Path = self.renderer.render(cl_latex, str(job.id), "cover")
-
-            # Persist
-            job.cv_latex = cv_latex
-            job.cover_letter_latex = cl_latex
-            job.cv_pdf_path = str(cv_pdf)
-            job.cover_letter_pdf_path = str(cl_pdf)
-
-        except LatexRenderError as exc:
-            logger.exception("PDF render failed for job %s: %s", job_id, exc)
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("Unexpected error in generate_documents for job %s: %s", job_id, exc)
-        finally:
-            # Always clear the processing flag
-            job.processing = False
-            attributes.flag_modified(job, "dimension_scores")
-            await self.db.commit()
 
     async def update_workflow_status(
         self, job_id: str, status: str, session_id: Optional[str] = None
@@ -243,16 +206,29 @@ class JobMatchService:
         if job is None:
             return
 
-        latex = job.cv_latex if doc_type == "cv" else job.cover_letter_latex
-        if not latex:
-            logger.warning("No LaTeX source found for job %s doc_type=%s", job_id, doc_type)
+        # Use markdown texts
+        text = job.cv_text if doc_type == "cv" else job.cover_letter_text
+        if not text:
+            logger.warning("No Markdown text found for job %s doc_type=%s", job_id, doc_type)
             return
 
         job.processing = True
         await self.db.commit()
 
+        # Get user profile for template personalization
+        result = await self.db.execute(select(UserProfile))
+        profile = result.scalars().first()
+        user_info = {}
+        if profile:
+            user_info = {
+                "name": profile.full_name or "",
+                "email": profile.email or "",
+                "phone": profile.phone or "",
+                "location": profile.location or "",
+            }
+
         try:
-            pdf_path = self.renderer.render(latex, str(job.id), doc_type)
+            pdf_path = self.renderer.render_from_markdown(text, doc_type, str(job.id), user_info)
             if doc_type == "cv":
                 job.cv_pdf_path = str(pdf_path)
             else:
@@ -276,21 +252,60 @@ class JobMatchService:
         )
         return result.scalar_one_or_none()
 
-    def _build_cv_context(self, session_id: str) -> dict:
-        """Build a simplified CV context dict from the history cache.
+    def _extract_skills(self, profile: UserProfile) -> list:
+        skills = []
+        if profile.skills:
+            for k, v in profile.skills.items():
+                if isinstance(v, list):
+                    skills.extend(v)
+        return skills
 
-        In the current implementation the cache stores conversation messages.
-        Future work can extend this to pull structured profile data from the DB.
+    def _extract_education(self, profile: UserProfile) -> str:
+        if not profile.education:
+            return ""
+        return " ".join(
+            str(e.get("degree", "")) + " " + str(e.get("institution", ""))
+            for e in profile.education if isinstance(e, dict)
+        )
+
+    async def _build_cv_context(self, session_id: str) -> dict:
+        """Build a simplified CV context dict from the user profile and history cache.
         """
+        # Get session messages (if any)
         messages = self.cache.get_messages(session_id)
-        full_text = " ".join(
+        session_text = " ".join(
             m.get("content", "") for m in messages if m.get("role") == "user"
         )
+
+        # Get profile from database
+        result = await self.db.execute(select(UserProfile))
+        profile = result.scalars().first()
+
+        skills = []
+        education_level = ""
+        experience_years = 0
+        career_objective = ""
+        summary_parts = [session_text]
+
+        if profile:
+            skills = self._extract_skills(profile)
+            education_level = self._extract_education(profile)
+
+            if profile.experience:
+                experience_years = len(profile.experience) * 2  # simple heuristic
+
+            career_objective = profile.career_goals or ""
+
+            if profile.raw_cv_text:
+                summary_parts.append(profile.raw_cv_text)
+
+        full_text = " ".join(summary_parts).strip()
+
         return {
-            "skills": [],           # Extended in future via UserProfile model
-            "education_level": "",  # Extended in future via UserProfile model
-            "experience_years": 0,  # Extended in future via UserProfile model
-            "career_objective": "",
+            "skills": skills,
+            "education_level": education_level[:500],
+            "experience_years": experience_years,
+            "career_objective": career_objective,
             "summary": full_text[:2000],  # Truncate to avoid embedding dim explosion
         }
 

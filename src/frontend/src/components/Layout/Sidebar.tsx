@@ -19,7 +19,9 @@ const navItems: NavItem[] = [
   { label: "Applications", to: "/applications", icon: "bi-folder2-open" },
   { label: "Interview prep", to: "/interview", icon: "bi-camera-video" },
   { label: "History", to: "/history", icon: "bi-clock-history" },
+  { label: "Settings", to: "/settings", icon: "bi-gear" },
 ];
+
 
 /**
  * Persistent sidebar navigation for Apply-Agent.

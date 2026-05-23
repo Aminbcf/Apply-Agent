@@ -169,7 +169,7 @@ async def test_onboarding_cv_upload_txt_updates_profile(client):
     files = {
         "file": ("cv.txt", cv_text.encode("utf-8"), "text/plain"),
     }
-    response = await client.post("/onboarding/cv", files=files)
+    response = await client.post("/onboarding/upload", files=files)
     assert response.status_code == 200
     data = response.json()
 
@@ -217,7 +217,7 @@ async def test_onboarding_debug_endpoints(client):
         files = {
             "file": ("cv.txt", cv_text.encode("utf-8"), "text/plain"),
         }
-        response = await client.post("/onboarding/cv", files=files)
+        response = await client.post("/onboarding/upload", files=files)
         assert response.status_code == 200
 
         # 3. Access debug endpoint and assert structure

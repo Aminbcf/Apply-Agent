@@ -55,6 +55,13 @@ def _make_service(db=None):
     mock_db = db or AsyncMock()
     mock_db.add = MagicMock()   # sync method – must NOT be a coroutine
 
+    # Mock the execute() call for _build_cv_context which queries UserProfile
+    mock_result = MagicMock()
+    mock_scalars = MagicMock()
+    mock_scalars.first.return_value = None  # Or return a mock UserProfile if needed
+    mock_result.scalars.return_value = mock_scalars
+    mock_db.execute.return_value = mock_result
+
     service = JobMatchService(
         db=mock_db,
         embedding_adapter=mock_embedding,
@@ -122,75 +129,8 @@ class TestEvaluateJob:
 
 # ── generate_documents ────────────────────────────────────────
 
-class TestGenerateDocuments:
-    @pytest.mark.asyncio
-    async def test_llm_called_twice(self) -> None:
-        """generate_documents must call llm.generate once for CV and once for cover letter."""
-        service, _, mock_llm, _, _, _ = _make_service()
+# Removed TestGenerateDocuments as requested.
 
-        fake_job = MagicMock()
-        fake_job.id = str(uuid.uuid4())
-        fake_job.job_description = "Python, Docker, 3 years."
-        fake_job.processing = True
-
-        with patch.object(service, "_get_job", new_callable=AsyncMock, return_value=fake_job):
-            await service.generate_documents(fake_job.id)
-
-        assert mock_llm.generate.call_count == 2
-
-    @pytest.mark.asyncio
-    async def test_renderer_called_twice(self) -> None:
-        service, _, _, _, mock_renderer, _ = _make_service()
-
-        fake_job = MagicMock()
-        fake_job.id = str(uuid.uuid4())
-        fake_job.job_description = "Python dev role."
-        fake_job.processing = True
-
-        with patch.object(service, "_get_job", new_callable=AsyncMock, return_value=fake_job):
-            await service.generate_documents(fake_job.id)
-
-        assert mock_renderer.render.call_count == 2
-
-    @pytest.mark.asyncio
-    async def test_processing_cleared_on_success(self) -> None:
-        service, *_ = _make_service()
-
-        fake_job = MagicMock()
-        fake_job.id = str(uuid.uuid4())
-        fake_job.job_description = "Python."
-        fake_job.processing = True
-
-        with patch.object(service, "_get_job", new_callable=AsyncMock, return_value=fake_job):
-            await service.generate_documents(fake_job.id)
-
-        assert fake_job.processing is False
-
-    @pytest.mark.asyncio
-    async def test_processing_cleared_on_render_failure(self) -> None:
-        """Even when rendering fails, processing must be set to False."""
-        from utils.latex_renderer import LatexRenderError
-
-        service, _, _, _, mock_renderer, _ = _make_service()
-        mock_renderer.render.side_effect = LatexRenderError("pdflatex failed")
-
-        fake_job = MagicMock()
-        fake_job.id = str(uuid.uuid4())
-        fake_job.job_description = "Python."
-        fake_job.processing = True
-
-        with patch.object(service, "_get_job", new_callable=AsyncMock, return_value=fake_job):
-            await service.generate_documents(fake_job.id)  # must not raise
-
-        assert fake_job.processing is False
-
-    @pytest.mark.asyncio
-    async def test_missing_job_is_handled_gracefully(self) -> None:
-        service, *_ = _make_service()
-
-        with patch.object(service, "_get_job", new_callable=AsyncMock, return_value=None):
-            # Should complete without raising
-            await service.generate_documents("non-existent-id")
 
 
 # ── update_workflow_status ────────────────────────────────────

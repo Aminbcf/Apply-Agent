@@ -40,7 +40,7 @@ async def get_onboarding_status(
     return OnboardingStatusSchema(status=status_val, steps_completed=steps)
 
 
-@router.post("/cv", response_model=ProfileSchema)
+@router.post("/upload", response_model=ProfileSchema)
 async def upload_cv(
     db: Annotated[AsyncSession, Depends(get_db)],
     file: UploadFile = File(...),
