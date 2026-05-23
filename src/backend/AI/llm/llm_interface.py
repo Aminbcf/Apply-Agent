@@ -130,7 +130,7 @@ class QwenAdapter(LLMAdapter):
                     "Install with: pip install bitsandbytes>=0.43"
                 )
 
-        base_model = AutoModelForCausalLM.from_pretrained(
+        base_model = AutoModelForCausalLM.from_pretrained(  # nosec B615
             base_model_id,
             quantization_config=quantization_config,
             device_map=device_map,
