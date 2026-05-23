@@ -40,8 +40,8 @@ export function DocumentEditor() {
       onCvSectionDone: (section, ok) => {
         setCvSectionsStatus((prev) => ({ ...prev, [section]: ok ? "done" : "error" }));
       },
-      onCvToken: (token) => {
-        setStreamingCv((prev) => prev + token);
+      onCvToken: () => {
+        // CV streaming text is not displayed, we show the section checklist instead.
       },
       onCvComplete: (text) => {
         setCvText(text);
