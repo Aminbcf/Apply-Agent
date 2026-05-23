@@ -65,7 +65,6 @@ export function DocumentEditor() {
         }
       },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
   // Auto-save debounced
