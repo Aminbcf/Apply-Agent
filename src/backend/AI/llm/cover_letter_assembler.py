@@ -14,6 +14,46 @@ COVER_LETTER_TEMPLATE = """{greeting}
 {closing}
 """
 
+_BANNED_PHRASES = (
+    "references",
+    "références",
+    "your experience paragraph here",
+    "your value proposition paragraph here",
+    "output schema",
+    "example json",
+    "instructions:",
+)
+
+
+def _dedupe_paragraphs(text: str) -> str:
+    paragraphs = [paragraph.strip() for paragraph in text.split("\n\n") if paragraph.strip()]
+    deduped = []
+    seen = set()
+
+    for paragraph in paragraphs:
+        normalized = " ".join(paragraph.split())
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(paragraph)
+
+    return "\n\n".join(deduped)
+
+
+def _limit_paragraphs(text: str, max_paragraphs: int = 3) -> str:
+    paragraphs = [paragraph.strip() for paragraph in text.split("\n\n") if paragraph.strip()]
+    cleaned = []
+
+    for paragraph in paragraphs:
+        lower_paragraph = paragraph.lower()
+        if any(phrase in lower_paragraph for phrase in _BANNED_PHRASES):
+            continue
+        cleaned.append(paragraph)
+        if len(cleaned) >= max_paragraphs:
+            break
+
+    return "\n\n".join(cleaned)
+
 def validate_cl_sections(sections: dict) -> dict:
     safe = {
         "hook": {
@@ -58,7 +98,8 @@ def assemble_cover_letter(sections: dict) -> str:
         closing=data["closing"]["closing"]
     )
     
-    # Strip excessive newlines
-    cl_text = "\n\n".join(line.strip() for line in cl_text.split("\n\n") if line.strip())
+    # Strip excessive newlines and remove accidental duplicate paragraphs.
+    cl_text = _dedupe_paragraphs(cl_text)
+    cl_text = _limit_paragraphs(cl_text)
     
     return cl_text

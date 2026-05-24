@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Float, String, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
@@ -24,6 +24,9 @@ class JobApplication(Base):
     # Extracted Info
     match_score: Mapped[float] = mapped_column(Float, nullable=True)
     extracted_requirements: Mapped[dict] = mapped_column(JSON, default=dict)
+
+    # Link to the persistent user profile (optional)
+    user_profile_id: Mapped[UUID | None] = mapped_column(ForeignKey("user_profiles.id"), nullable=True, index=True)
 
     # Workflow: pending → interview → accepted → rejected | ghosted
     workflow_status: Mapped[str] = mapped_column(String, default="pending")

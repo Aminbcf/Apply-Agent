@@ -269,3 +269,82 @@ _PROJECT_ENTRIES_
     latex = latex.replace("_PROJECT_ENTRIES_", _assemble_projects(data))
 
     return latex
+
+
+def assemble_cv_markdown(sections: dict) -> str:
+    """Assemble an editable markdown CV from structured sections.
+
+    The stream editor uses this representation so users can review and confirm
+    generated content before it is rendered to PDF.
+    """
+    data = validate_cv_sections(sections)
+    lines: list[str] = []
+
+    header = data["header"]
+    if header["name"]:
+        lines.append(f"# {header['name']}")
+    if header["title"]:
+        lines.append(header["title"])
+
+    contact_parts = [header[key] for key in ("email", "phone", "location") if header[key]]
+    if contact_parts:
+        lines.append(" | ".join(contact_parts))
+
+    for section_name, section_text in (("Summary", data["summary"].get("summary", "")),):
+        if section_text:
+            lines.extend(["", f"## {section_name}", section_text])
+
+    if data["experience"]:
+        lines.append("")
+        lines.append("## Experience")
+        for exp in data["experience"]:
+            role_bits = [exp.get("role", ""), exp.get("company", "")]
+            role_line = " — ".join(bit for bit in role_bits if bit)
+            if role_line:
+                lines.append(f"### {role_line}")
+            meta_bits = [exp.get("location", ""), exp.get("dates", "")]
+            meta_line = " | ".join(bit for bit in meta_bits if bit)
+            if meta_line:
+                lines.append(meta_line)
+            for bullet in exp.get("bullets", []):
+                if bullet:
+                    lines.append(f"- {bullet}")
+
+    if data["education"]:
+        lines.append("")
+        lines.append("## Education")
+        for edu in data["education"]:
+            degree_bits = [edu.get("degree", ""), edu.get("field", "")]
+            degree_line = " in ".join(bit for bit in degree_bits if bit)
+            if degree_line:
+                lines.append(f"### {degree_line}")
+            meta_bits = [edu.get("institution", ""), edu.get("dates", ""), edu.get("gpa", "")]
+            meta_line = " | ".join(bit for bit in meta_bits if bit)
+            if meta_line:
+                lines.append(meta_line)
+
+    skills = data["skills"]
+    skill_lines = []
+    for category, items in skills.items():
+        if items:
+            skill_lines.append(f"- **{category.capitalize()}**: {', '.join(str(item) for item in items)}")
+    if skill_lines:
+        lines.append("")
+        lines.append("## Skills")
+        lines.extend(skill_lines)
+
+    if data["projects"]:
+        lines.append("")
+        lines.append("## Projects")
+        for project in data["projects"]:
+            if project.get("name"):
+                lines.append(f"### {project['name']}")
+            meta_bits = [project.get("tech", ""), project.get("dates", "")]
+            meta_line = " | ".join(bit for bit in meta_bits if bit)
+            if meta_line:
+                lines.append(meta_line)
+            for bullet in project.get("bullets", []):
+                if bullet:
+                    lines.append(f"- {bullet}")
+
+    return "\n".join(lines).strip()

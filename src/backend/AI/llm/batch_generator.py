@@ -4,7 +4,12 @@ Runs the multi-batch generation pipeline for CV and cover letters.
 """
 
 import asyncio
+import logging
+
 from AI.llm.llm_interface import build_rag_prompt, generate_json, LLMAdapter, ExternalApiAdapter
+from AI.llm.cover_letter_assembler import assemble_cover_letter
+
+logger = logging.getLogger(__name__)
 
 def _can_run_parallel(is_external: bool) -> bool:
     if is_external:
@@ -29,6 +34,50 @@ CL_SCHEMAS = {
     "value": {"value_proposition": ""},
     "closing": {"closing": ""}
 }
+
+_SECTION_BANNED_PHRASES = (
+    "your experience paragraph here",
+    "your value proposition paragraph here",
+    "references",
+    "références",
+    "example json",
+    "output schema",
+    "instructions:",
+    "hard guardrails",
+)
+
+
+def _chunk_text(text: str) -> list[str]:
+    paragraphs = [paragraph.strip() for paragraph in text.split("\n\n") if paragraph.strip()]
+    if paragraphs:
+        return [f"{paragraph}\n\n" for paragraph in paragraphs[:-1]] + [paragraphs[-1]]
+    return [text]
+
+
+async def _generate_section(llm: LLMAdapter, scenario: str, cv_ctx: dict, job_ctx: dict, few_shot: list, example_files: dict, schema: dict):
+    prompt = build_rag_prompt(scenario, cv_ctx, job_ctx, few_shot, example_files)
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, generate_json, llm, prompt, schema, 2)
+    return _sanitize_section_result(result, schema)
+
+
+def _sanitize_section_result(result, schema: dict):
+    if not isinstance(result, dict):
+        return schema
+
+    cleaned = {}
+    for key, default_value in schema.items():
+        value = result.get(key, default_value)
+        if isinstance(value, str):
+            text = value.strip()
+            lower_text = text.lower()
+            if not text or any(phrase in lower_text for phrase in _SECTION_BANNED_PHRASES):
+                cleaned[key] = ""
+            else:
+                cleaned[key] = text
+        else:
+            cleaned[key] = value
+    return cleaned
 
 async def generate_cv_sections(llm: LLMAdapter, cv_ctx: dict, job_ctx: dict, few_shot: list, example_files: dict):
     """
@@ -75,39 +124,26 @@ async def generate_cover_letter_stream(llm: LLMAdapter, cv_ctx: dict, job_ctx: d
     and finally ("final", full_text).
     """
     yield "start", "cover_letter"
-    prompt = build_rag_prompt("cover_letter", cv_ctx, job_ctx, few_shot, example_files)
-    
     full_text = ""
-    is_external = isinstance(llm, ExternalApiAdapter)
-    
     try:
-        if is_external:
-            async for chunk in llm.agenerate_stream(prompt):
-                full_text += chunk
-                yield "token", chunk
-        else:
-            # We must run synchronous stream generation in a thread
-            loop = asyncio.get_event_loop()
-            queue: asyncio.Queue[str | None] = asyncio.Queue()
+        sections = {}
+        for section_name in ["hook", "experience", "value", "closing"]:
+            yield "start", section_name
+            sections[section_name] = await _generate_section(
+                llm,
+                f"cl_{section_name}",
+                cv_ctx,
+                job_ctx,
+                few_shot,
+                example_files,
+                CL_SCHEMAS[section_name],
+            )
+            yield "done", section_name
 
-            def _run():
-                try:
-                    for chunk in llm.generate_stream(prompt):
-                        loop.call_soon_threadsafe(queue.put_nowait, chunk)
-                finally:
-                    loop.call_soon_threadsafe(queue.put_nowait, None)
+        full_text = assemble_cover_letter(sections)
+        for chunk in _chunk_text(full_text):
+            yield "token", chunk
 
-            # Fire and forget thread
-            import threading
-            threading.Thread(target=_run, daemon=True).start()
-
-            while True:
-                chunk = await queue.get()
-                if chunk is None:
-                    break
-                full_text += chunk
-                yield "token", chunk
-                
     except Exception as exc:
         logger.exception("Cover letter streaming failed")
         yield "error", str(exc)

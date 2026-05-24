@@ -31,7 +31,7 @@ from uuid import UUID
 
 from AI.llm.llm_interface import ExternalApiAdapter, build_rag_prompt
 from AI.llm.batch_generator import generate_cv_sections, generate_cover_letter_stream
-from AI.llm.cv_assembler import assemble_cv_latex
+from AI.llm.cv_assembler import assemble_cv_latex, assemble_cv_markdown
 from AI.llm.rag_service import (
     retrieve_cv_context,
     retrieve_job_context,
@@ -67,9 +67,10 @@ def _handle_sse_event(event_type: str, payload: any, prefix: str, state: dict) -
         return _sse_event("error", {"message": f"{prefix.upper()} generation failed: {payload}"})
     elif event_type == "final":
         if prefix == "cv":
-            cv_full_text = assemble_cv_latex(payload)
-            state["cv_full"] = cv_full_text
-            return _sse_event("cv_complete", {"text": cv_full_text})
+            cv_markdown = assemble_cv_markdown(payload)
+            state["cv_full"] = cv_markdown
+            state["cv_latex"] = assemble_cv_latex(payload)
+            return _sse_event("cv_complete", {"text": cv_markdown})
         else:
             state["cl_full"] = payload
             return _sse_event("cover_complete", {"text": payload})
@@ -109,7 +110,24 @@ async def _sse_generator(job_id: str, db: AsyncSession):
         yield _sse_event("error", {"message": f"Job {job_id} not found"})
         return
 
-    llm = model_registry.get_llm()
+    try:
+        llm = model_registry.get_llm()
+    except Exception as exc:  # LLM not ready or registry error
+        logger.exception("LLM not available for job %s: %s", job_id, exc)
+        # Try to mark the job as not processing so UI doesn't hang
+        try:
+            result = await db.execute(
+                select(JobApplication).where(JobApplication.id == job_uuid)
+            )
+            job = result.scalar_one_or_none()
+            if job:
+                job.processing = False
+                await db.commit()
+        except Exception:
+            logger.exception("Failed to clear processing flag for job %s", job_id)
+
+        yield _sse_event("error", {"message": f"LLM not ready: {exc}"})
+        return
 
     # ── Retrieve full RAG context ────────────────────────────────────────────
     try:
@@ -141,7 +159,7 @@ async def _sse_generator(job_id: str, db: AsyncSession):
     task1 = asyncio.create_task(worker(cv_gen, "cv"))
     task2 = asyncio.create_task(worker(cl_gen, "cover"))
 
-    state = {"finished_workers": 0, "cv_full": "", "cl_full": ""}
+    state = {"finished_workers": 0, "cv_full": "", "cv_latex": "", "cl_full": ""}
     while state["finished_workers"] < 2:
         event_type, payload, prefix = await queue.get()
         event_str = _handle_sse_event(event_type, payload, prefix, state)
@@ -163,6 +181,7 @@ async def _sse_generator(job_id: str, db: AsyncSession):
         job = result.scalar_one_or_none()
         if job:
             job.cv_text = cv_full
+            job.cv_latex = state.get("cv_latex") or None
             job.cover_letter_text = cl_full
             job.processing = False
             await db.commit()
@@ -205,6 +224,21 @@ async def generate_stream(payload: GenerateStreamIn, db: DbDep):
         raise HTTPException(status_code=404, detail=f"Job {payload.job_id} not found")
 
     # Mark as processing
+    # Ensure models are ready before starting a long-running stream
+    # Wait briefly for models to become ready (helps UX when server just started).
+    # Poll for up to `max_wait_seconds` before returning 503 to the client.
+    max_wait_seconds = 10
+    poll_interval = 0.5
+    waited = 0.0
+    while waited < max_wait_seconds:
+        if model_registry.is_ready():
+            break
+        await asyncio.sleep(poll_interval)
+        waited += poll_interval
+
+    if not model_registry.is_ready():
+        raise HTTPException(status_code=503, detail="Models are still loading. Try again shortly.")
+
     job.processing = True
     await db.commit()
 
