@@ -12,15 +12,5 @@ INSTRUCTIONS:
 
 OUTPUT SCHEMA:
 ```json
-[
-  {
-    "name": "Project Name",
-    "tech": "Python, React, PostgreSQL",
-    "dates": "2022 - 2023",
-    "bullets": [
-      "Built a full-stack application that solved X problem.",
-      "Improved performance by Y% using Z technology."
-    ]
-  }
-]
+[]
 ```

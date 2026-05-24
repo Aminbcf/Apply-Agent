@@ -12,6 +12,6 @@ INSTRUCTIONS:
 OUTPUT SCHEMA:
 ```json
 {
-  "summary": "Your professional summary here."
+  "summary": ""
 }
 ```

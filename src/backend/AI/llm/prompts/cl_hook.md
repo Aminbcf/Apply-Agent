@@ -23,7 +23,7 @@ INSTRUCTIONS:
 OUTPUT SCHEMA:
 ```json
 {
-  "greeting": "Dear Hiring Manager,",
-  "hook": "Your compelling opening hook here."
+  "greeting": "",
+  "hook": ""
 }
 ```

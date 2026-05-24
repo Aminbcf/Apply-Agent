@@ -565,7 +565,24 @@ def generate_json(llm: LLMAdapter, prompt: str, schema_example: dict | list, max
     for attempt in range(max_retries + 1):
         try:
             raw_response = llm.generate(prompt)
-            return _parse_json(raw_response, schema_example)
+            parsed = _parse_json(raw_response, schema_example)
+            # If parsing returned the default schema, log and persist the raw response for debugging.
+            if parsed == schema_example:
+                try:
+                    logger.warning("JSON parse returned default schema — saving raw LLM response for inspection.")
+                    import os, datetime
+                    logs_dir = os.path.join(os.path.dirname(__file__), "..", "..", "logs")
+                    os.makedirs(logs_dir, exist_ok=True)
+                    fname = os.path.join(logs_dir, "llm_parse_failures.log")
+                    with open(fname, "a", encoding="utf-8") as f:
+                        f.write(f"\n--- {datetime.datetime.utcnow().isoformat()}Z ---\n")
+                        f.write("PROMPT:\n")
+                        f.write(prompt[:2000] + ("..." if len(prompt) > 2000 else "") + "\n")
+                        f.write("RAW_RESPONSE:\n")
+                        f.write(raw_response[:10000] + ("..." if len(raw_response) > 10000 else "") + "\n")
+                except Exception:
+                    logger.exception("Failed to write raw LLM response to log file")
+            return parsed
         except Exception as e:
             logger.warning("LLM generation failed on attempt %d: %s", attempt + 1, e)
             if attempt == max_retries:

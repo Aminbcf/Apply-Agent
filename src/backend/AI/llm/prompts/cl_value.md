@@ -21,6 +21,6 @@ INSTRUCTIONS:
 OUTPUT SCHEMA:
 ```json
 {
-  "value_proposition": "Your value proposition paragraph here."
+  "value_proposition": ""
 }
 ```

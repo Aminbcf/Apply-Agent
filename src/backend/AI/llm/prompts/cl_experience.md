@@ -21,6 +21,6 @@ INSTRUCTIONS:
 OUTPUT SCHEMA:
 ```json
 {
-  "experience_paragraph": "Your experience paragraph here."
+  "experience_paragraph": ""
 }
 ```

@@ -383,7 +383,7 @@ export async function initAppProfile(): Promise<UserProfileData | null> {
     const p = await getProfile();
     _cachedProfile = p;
     return p;
-  } catch (err) {
+  } catch {
     _cachedProfile = null;
     return null;
   }

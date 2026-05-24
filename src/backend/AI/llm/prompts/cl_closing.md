@@ -19,6 +19,6 @@ INSTRUCTIONS:
 OUTPUT SCHEMA:
 ```json
 {
-  "closing": "Your closing sentence here."
+  "closing": ""
 }
 ```

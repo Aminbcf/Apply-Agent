@@ -10,13 +10,5 @@ INSTRUCTIONS:
 
 OUTPUT SCHEMA:
 ```json
-[
-  {
-    "institution": "University Name",
-    "degree": "Degree Level (e.g. Bachelor of Science)",
-    "field": "Major/Field of Study",
-    "dates": "Graduation Year",
-    "gpa": "GPA (if applicable)"
-  }
-]
+[]
 ```

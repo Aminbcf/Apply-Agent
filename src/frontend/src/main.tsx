@@ -3,9 +3,17 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "./styles/globals.css";
+import { initAppProfile } from "./services/api";
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+const renderApp = () => {
+  ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+};
+
+// Prefetch persistent profile once on startup to prefill UI and avoid re-onboarding.
+initAppProfile().finally(() => {
+  renderApp();
+});
