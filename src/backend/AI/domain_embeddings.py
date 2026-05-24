@@ -30,7 +30,16 @@ class DomainEmbeddingManager:
                        'all-MiniLM-L6-v2' is lightweight and fast.
                        'all-mpnet-base-v2' is more accurate but slower.
         """
-        self.model = SentenceTransformer(model_name)
+        import os
+        try:
+            self.model = SentenceTransformer(model_name)
+        except Exception as e:
+            if "client has been closed" in str(e) or "getaddrinfo" in str(e) or "Max retries exceeded" in str(e):
+                print(f"Network error loading {model_name}, attempting offline mode...")
+                os.environ["HF_HUB_OFFLINE"] = "1"
+                self.model = SentenceTransformer(model_name, local_files_only=True)
+            else:
+                raise
         self.domain_embeddings: Dict[str, np.ndarray] = {}
         self.domains = DOMAINS
         self._generate_domain_embeddings()
