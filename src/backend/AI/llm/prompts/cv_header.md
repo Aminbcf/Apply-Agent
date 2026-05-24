@@ -13,12 +13,12 @@ INSTRUCTIONS:
 OUTPUT SCHEMA:
 ```json
 {
-  "name": "Full Name",
-  "email": "email@example.com",
-  "phone": "+1 234 567 890",
-  "linkedin": "linkedin.com/in/profile",
-  "github": "github.com/profile",
-  "location": "City, Country",
-  "title": "Target Job Title"
+  "name": "",
+  "email": "",
+  "phone": "",
+  "linkedin": "",
+  "github": "",
+  "location": "",
+  "title": ""
 }
 ```

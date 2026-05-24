@@ -128,6 +128,12 @@ class JobMatchService:
             workflow_status="pending",
             processing=True,
         )
+
+        # Associate with existing user profile if present
+        result = await self.db.execute(select(UserProfile))
+        profile = result.scalars().first()
+        if profile:
+            job.user_profile_id = profile.id
         self.db.add(job)
         await self.db.commit()
         await self.db.refresh(job)

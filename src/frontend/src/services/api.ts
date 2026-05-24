@@ -370,3 +370,21 @@ export const saveLlmSettings = (payload: LlmSettingsIn) =>
 
 export const testLlmConnection = () =>
   apiClient.get<LlmTestOut>("/settings/llm/test");
+
+// ── Init helpers ───────────────────────────────────────────
+/**
+ * Fetch and cache the persistent user profile. Call once on app startup
+ * so the UI can pre-fill job creation and avoid re-onboarding each time.
+ */
+let _cachedProfile: UserProfileData | null | undefined = undefined;
+export async function initAppProfile(): Promise<UserProfileData | null> {
+  if (_cachedProfile !== undefined) return _cachedProfile ?? null;
+  try {
+    const p = await getProfile();
+    _cachedProfile = p;
+    return p;
+  } catch {
+    _cachedProfile = null;
+    return null;
+  }
+}

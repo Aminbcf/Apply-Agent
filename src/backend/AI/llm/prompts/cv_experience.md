@@ -12,16 +12,5 @@ INSTRUCTIONS:
 
 OUTPUT SCHEMA:
 ```json
-[
-  {
-    "company": "Company Name",
-    "role": "Job Title",
-    "location": "City, Country",
-    "dates": "Month Year - Month Year",
-    "bullets": [
-      "Accomplishment 1 using action verbs and metrics.",
-      "Accomplishment 2..."
-    ]
-  }
-]
+[]
 ```

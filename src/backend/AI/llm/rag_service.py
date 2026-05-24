@@ -220,12 +220,50 @@ def retrieve_example_files(max_chars: int = 800) -> dict:
     if cl_instr_path.is_file():
         try:
             text = cl_instr_path.read_text(encoding="utf-8")
-            # Keep only the most relevant sections to save tokens
-            result["cover_letter_instructions"] = text[:2000]
+            # Keep only the most relevant sections to save tokens and avoid prompt contamination.
+            result["cover_letter_instructions"] = _extract_cover_letter_guidance(text)
         except Exception:  # noqa: BLE001
             logger.exception("Failed to load cover letter instructions")
 
     return result
+
+def _extract_cover_letter_guidance(text: str, max_chars: int = 1800) -> str:
+    """Keep only the operational cover-letter rules and drop example-heavy sections."""
+    if not text:
+        return ""
+
+    allowed_headings = {
+        "System Role",
+        "Preflight (always run before generation)",
+        "Retrieval & Context Handling",
+        "Citation Rules",
+        "Metadata Extraction Schema (JSON)",
+        "Prompt Templates",
+        "Formatting & Style Constraints",
+        "Testing & Validation Checklist (run after generation)",
+        "Operational notes for RAG integrators",
+    }
+
+    kept_lines: list[str] = []
+    keep_block = False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            heading = stripped[3:].strip()
+            keep_block = heading in allowed_headings
+            if keep_block:
+                kept_lines.append(line)
+            continue
+
+        if keep_block:
+            if "Example JSON" in stripped or "Example generation rule" in stripped:
+                break
+            kept_lines.append(line)
+
+    compact = "\n".join(kept_lines).strip()
+    if not compact:
+        return text[:max_chars]
+    return compact[:max_chars]
 
 
 # ── RAGService ────────────────────────────────────────────────────────────────

@@ -13,9 +13,9 @@ INSTRUCTIONS:
 OUTPUT SCHEMA:
 ```json
 {
-  "languages": ["Python", "JavaScript", "SQL"],
-  "frameworks": ["React", "Django"],
-  "tools": ["Git", "Docker"],
-  "other": ["Agile", "Leadership"]
+  "languages": [],
+  "frameworks": [],
+  "tools": [],
+  "other": []
 }
 ```
